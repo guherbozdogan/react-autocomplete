@@ -9,6 +9,8 @@
   const RIGHT_ARROW_KEYCODE = 39;
   const DOWN_ARROW_KEYCODE = 40;
 
+  const requestAnimationFrame = window.requestAnimationFrame;
+
   function autoComplete(element, options) {
 
     const menuContainer = document.createElement('div');
@@ -38,6 +40,11 @@
       return index > -1 && index < menuItems.length;
     }
 
+    function moveInputCursorToEnd() {
+      const length = element.value.length;
+      element.setSelectionRange(length, length);
+    }
+
     function highlightItem(index) {
       if (isValidIndex(index)) {
         const menuItem = menuItems[index];
@@ -46,6 +53,7 @@
       } else {
         element.value = initialValue;
       }
+      requestAnimationFrame(moveInputCursorToEnd);
     }
 
     function unhighlightItem(index) {
@@ -101,17 +109,22 @@
       }
     };
 
-    element.addEventListener('keyup', (event) => {
+    element.addEventListener('keydown', (event) => {
       const keyUpHandler = keyUpHandlers[event.keyCode];
       if (keyUpHandler) {
         keyUpHandler(event);
-      } else {
+      }
+    });
+
+    element.addEventListener('keyup', (event) => {
+      const keyUpHandler = keyUpHandlers[event.keyCode];
+      if (!keyUpHandler) {
         if (highlightedIndex === -1) {
           initialValue = element.value;
         }
         updateAutoCompleteMenu();
       }
-    })
+    });
   }
 
   if (typeof module === 'object') {
