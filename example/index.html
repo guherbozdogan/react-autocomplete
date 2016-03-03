@@ -10,16 +10,32 @@
     <script>
       const items = [
         {
+          value: 'Ada',
+          keys: ['ada', 'pascal']
+        },
+        {
+          value: 'Brainfuck',
+          keys: ['brainfuck', 'esoteric', 'troll']
+        },
+        {
           value: 'Java',
-          keys: ['java', 'programming', 'server']
+          keys: ['java', 'jvm']
         },
         {
           value: 'JavaScript',
-          keys: ['javascript', 'programming', 'client']
+          keys: ['javascript', 'js', 'web', 'node', 'node.js', 'nodejs']
         },
         {
-          value: 'Ruby',
-          keys: ['ruby', 'programming', 'server']
+          value: 'LOLCODE',
+          keys: ['lolcode', 'lolspeak', 'esoteric', 'troll']
+        },
+        {
+          value: 'Node.js',
+          keys: ['javascript', 'js', 'node', 'node.js', 'nodejs']
+        },
+        {
+          value: 'Ruby on Rails',
+          keys: ['ruby on rails', 'ruby', 'rails']
         }
       ];
       window.autoComplete(document.querySelector('.autocomplete'), {
@@ -34,7 +50,7 @@
         },
         renderMenuItem: function(item) {
           const element = document.createElement('div');
-          element.innerHTML = '<span>' + item.value + '</span>';
+          element.innerHTML = item.value;
           return element;
         },
         highlightMenuElement: function(menuElement) {
