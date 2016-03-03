@@ -3,6 +3,9 @@
     "browser": true,
     "node": true
   },
+  "globals": {
+    "Promise": true
+  },
   "parser": "babel-eslint",
   "rules": {
     "block-scoped-var": 2,
