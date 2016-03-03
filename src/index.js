@@ -2,12 +2,11 @@
 
   const UP_ARROW_KEYCODE = 38;
   const DOWN_ARROW_KEYCODE = 40;
+  const ENTER_KEYCODE = 13;
 
-  const HIGHLIGHTED_MENU_ELEMENT_CLASS = 'autocomplete__item--highlighted';
+  const ITEM_HIGHLIGHTED_CLASS = 'autocomplete__item--highlighted';
 
   const SENTINEL = -1;
-
-  const requestAnimationFrame = window.requestAnimationFrame;
 
   function autoComplete(inputElement, options = {}) {
 
@@ -28,14 +27,25 @@
       return menuItemElement;
     };
     options.highlightMenuElement = options.highlightMenuElement || function(menuItemElement) {
-      menuItemElement.classList.add(HIGHLIGHTED_MENU_ELEMENT_CLASS);
+      menuItemElement.classList.add(ITEM_HIGHLIGHTED_CLASS);
     };
     options.unhighlightMenuElement = options.unhighlightMenuElement || function(menuItemElement) {
-      menuItemElement.classList.remove(HIGHLIGHTED_MENU_ELEMENT_CLASS);
+      menuItemElement.classList.remove(ITEM_HIGHLIGHTED_CLASS);
+    };
+    options.showMenu = options.showMenu || function() {
+      menuContainerElement.style.display = 'block';
+    };
+    options.hideMenu = options.hideMenu || function() {
+      menuContainerElement.style.display = 'none';
     };
     options.getItems = options.getItems || function() {
-      return [];
+      return new Promise(function(callback) {
+        callback([]);
+      });
     };
+
+    // Cache for matched items; maps each `value` to the array of matched items.
+    const matchedItemsCache = {};
 
     // Store the current value of the text box.
     let currentValue = '';
@@ -44,24 +54,20 @@
     let valueOnKeyDown = '';
 
     // Stores items that match the `currentValue`.
-    let filteredItems = [];
+    let matchedItems = [];
 
-    // Stores the rendered DOM menu elements. Same size as the `filteredItems`
-    // array; one-to-one correspondence with `filteredItems`.
+    // Stores the rendered DOM menu elements. Same size as the `matchedItems`
+    // array; one-to-one correspondence with `matchedItems`.
     let menuElements = [];
 
     // The index of the highlighted DOM element in `menuElements`.
     let highlightedIndex = SENTINEL;
 
-    function incrementHighlightedIndex() {
-      if (highlightedIndex < menuElements.length - 1) {
-        // Increment.
-        highlightedIndex++;
-      } else {
-        // Revert to the current value of the text box.
-        highlightedIndex = SENTINEL;
-      }
-    }
+    // Whether the menu is visible.
+    let isVisible = false;
+
+    // Sentinel for indicating whether we should cancel "stale" calls to `getItems`.
+    let uuid = 0;
 
     function decrementHighlightedIndex() {
       switch (highlightedIndex) {
@@ -79,10 +85,20 @@
       }
     }
 
+    function incrementHighlightedIndex() {
+      if (highlightedIndex < menuElements.length - 1) {
+        // Increment.
+        highlightedIndex++;
+      } else {
+        // Revert to the current value of the text box.
+        highlightedIndex = SENTINEL;
+      }
+    }
+
     function highlightMenuElement(index) {
       if (index !== SENTINEL && menuElements[index]) {
         // Set the text box value to that of the highlight item.
-        inputElement.value = filteredItems[index].value;
+        inputElement.value = matchedItems[index].value;
         // Highlight the menu element at `index`.
         options.highlightMenuElement(menuElements[index]);
       } else {
@@ -90,7 +106,7 @@
         inputElement.value = currentValue;
       }
       // Move the input cursor to the end of the text box in the next frame.
-      requestAnimationFrame(moveInputCursorToEnd);
+      window.requestAnimationFrame(moveTextCursorToEnd);
     }
 
     function unhighlightMenuElement(index) {
@@ -100,34 +116,76 @@
       }
     }
 
-    function moveInputCursorToEnd() {
+    function moveTextCursorToEnd() {
       const length = inputElement.value.length;
       inputElement.setSelectionRange(length, length);
     }
 
-    function updateAutoCompleteMenu(value) {
+    function renderMenuElements() {
+      menuElements = matchedItems.map(function(filteredItem) {
+        return options.renderMenuItem(filteredItem);
+      });
+      // Append all the `menuElements` to `menuContainerElement`.
+      menuContainerElement.innerHTML = '';
+      menuElements.forEach(function(menuElement) {
+        menuContainerElement.appendChild(menuElement);
+      });
+      showMenu();
+      highlightedIndex = SENTINEL;
+    }
+
+    function updateMenu(value, currentUuid) {
+      if (matchedItemsCache[value]) {
+        matchedItems = matchedItemsCache[value];
+        renderMenuElements();
+        return;
+      }
       options.getItems(value, inputElement).then(function(items) {
         // Filter the returned `items`.
-        filteredItems = items.filter(options.filterItems);
-        menuElements = filteredItems.map(function(filteredItem) {
-          return options.renderMenuItem(filteredItem);
-        });
-        // Append all the `menuElements` to `menuContainerElement`.
-        menuContainerElement.innerHTML = '';
-        menuElements.forEach(function(menuElement) {
-          menuContainerElement.appendChild(menuElement);
-        });
-        menuContainerElement.style.display = 'block';
+        matchedItems = items.filter(options.filterItems);
+        // Add the current set of `matchedItems` to the cache.
+        matchedItemsCache[value] = matchedItems;
+        // Exit if:
+        // 1. This particular call to `getItems` is "stale" (ie. superseded by
+        //    a later call).
+        // 2. The text box is currently empty.
+        if (uuid !== currentUuid || inputElement.value === '') {
+          return;
+        }
+        renderMenuElements();
       });
     }
 
+    function hideMenu() {
+      if (isVisible) {
+        options.hideMenu();
+        isVisible = false;
+      }
+    }
+
+    function showMenu() {
+      if (!isVisible && matchedItems.length > 0) {
+        options.showMenu();
+        isVisible = true;
+      }
+    }
+
     function reset() {
-      filteredItems = [];
+      matchedItems = [];
       menuElements = [];
       menuContainerElement.innerHTML = '';
+      hideMenu();
+      uuid = 0;
     }
 
     const changeHighlightedMenuElementHandlers = {
+      [ENTER_KEYCODE]: function() {
+        if (matchedItems[highlightedIndex]) {
+          currentValue = matchedItems[highlightedIndex].value;
+          inputElement.value = currentValue;
+          updateMenu(currentValue);
+        }
+      },
       [UP_ARROW_KEYCODE]: function() {
         unhighlightMenuElement(highlightedIndex);
         decrementHighlightedIndex();
@@ -141,13 +199,14 @@
     };
 
     inputElement.addEventListener('keydown', function(event) {
+      // Record the value of the text box on `keydown`.
+      valueOnKeyDown = inputElement.value;
+      // Reset if the text box is empty.
       if (currentValue === '') {
         reset();
         return;
       }
-      // Record the value of the text box.
-      valueOnKeyDown = inputElement.value;
-      // Change the highlighted menu item when we hit the up and down keys.
+      // Change the highlighted menu item when we press the up and down keys.
       const handler = changeHighlightedMenuElementHandlers[event.keyCode];
       if (handler) {
         handler(event);
@@ -155,17 +214,26 @@
     });
 
     inputElement.addEventListener('keyup', function(event) {
-      // Update the autocomplete menu if we had not hit up and down keys and
-      // if the text box value had changed between the `keydown` and `keyup`
-      // events.
+      // Update the autocomplete menu if:
+      // 1. We had pressed a key other than the up and down keys
+      // 2. The text box value had changed between the `keydown` and
+      //    `keyup` events.
       if (!changeHighlightedMenuElementHandlers[event.keyCode] && valueOnKeyDown !== inputElement.value) {
         currentValue = inputElement.value;
         if (currentValue === '') {
           reset();
         } else {
-          updateAutoCompleteMenu(currentValue);
+          updateMenu(currentValue, ++uuid);
         }
       }
+    });
+
+    inputElement.addEventListener('blur', function() {
+      hideMenu();
+    });
+
+    inputElement.addEventListener('focus', function() {
+      showMenu();
     });
 
   }
