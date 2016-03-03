@@ -119,7 +119,13 @@
         });
         menuContainer.style.display = 'block';
       });
-   }
+    }
+
+    function reset() {
+      filteredItems = [];
+      menuElements = [];
+      menuContainer.innerHTML = '';
+    }
 
     const changeHighlightedMenuElementHandlers = {
       [UP_ARROW_KEYCODE]: function() {
@@ -150,7 +156,9 @@
       // `keyup` events.
       if (!changeHighlightedMenuElementHandlers[event.keyCode] && valueOnKeyDown !== element.value) {
         currentValue = element.value;
-        if (currentValue !== '') {
+        if (currentValue === '') {
+          reset();
+        } else {
           updateAutoCompleteMenu(currentValue);
         }
       }
