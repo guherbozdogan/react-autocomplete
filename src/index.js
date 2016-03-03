@@ -9,15 +9,15 @@
 
   const requestAnimationFrame = window.requestAnimationFrame;
 
-  function autoComplete(element, options = {}) {
+  function autoComplete(inputElement, options = {}) {
 
     // Create a container that will contain the menu elements.
-    const menuContainer = document.createElement('div');
-    element.parentNode.insertBefore(menuContainer, element.nextSibling);
+    const menuContainerElement = document.createElement('div');
+    inputElement.parentNode.insertBefore(menuContainerElement, inputElement.nextSibling);
 
     // Default options.
     options.filterItems = options.filterItems || function(item) {
-      const searchTerm = element.value.toLowerCase();
+      const searchTerm = inputElement.value.toLowerCase();
       return item.keys.filter(function(key) {
         return key.toLowerCase().indexOf(searchTerm) !== -1;
       }).length > 0;
@@ -80,51 +80,51 @@
     }
 
     function highlightMenuElement(index) {
-      if (index !== SENTINEL) {
+      if (index !== SENTINEL && menuElements[index]) {
         // Set the text box value to that of the highlight item.
-        element.value = filteredItems[index].value;
-        // Highlight the DOM menu element at `index`.
+        inputElement.value = filteredItems[index].value;
+        // Highlight the menu element at `index`.
         options.highlightMenuElement(menuElements[index]);
       } else {
         // Revert the value of text box.
-        element.value = currentValue;
+        inputElement.value = currentValue;
       }
-      // Move the input cursor to the end of the text box.
+      // Move the input cursor to the end of the text box in the next frame.
       requestAnimationFrame(moveInputCursorToEnd);
     }
 
     function unhighlightMenuElement(index) {
-      if (index !== SENTINEL) {
-        // Unhighlight the DOM menu element at `index`.
+      if (index !== SENTINEL && menuElements[index]) {
+        // Unhighlight the menu element at `index`.
         options.unhighlightMenuElement(menuElements[index]);
       }
     }
 
     function moveInputCursorToEnd() {
-      const length = element.value.length;
-      element.setSelectionRange(length, length);
+      const length = inputElement.value.length;
+      inputElement.setSelectionRange(length, length);
     }
 
     function updateAutoCompleteMenu(value) {
-      options.getItems(value, element).then(function(items) {
-        // Filter the returned `items` using the `filterItemCallback`.
+      options.getItems(value, inputElement).then(function(items) {
+        // Filter the returned `items`.
         filteredItems = items.filter(options.filterItems);
         menuElements = filteredItems.map(function(filteredItem) {
           return options.renderMenuItem(filteredItem);
         });
-        // Append all the `menuElements` to `menuContainer`.
-        menuContainer.innerHTML = '';
+        // Append all the `menuElements` to `menuContainerElement`.
+        menuContainerElement.innerHTML = '';
         menuElements.forEach(function(menuElement) {
-          menuContainer.appendChild(menuElement);
+          menuContainerElement.appendChild(menuElement);
         });
-        menuContainer.style.display = 'block';
+        menuContainerElement.style.display = 'block';
       });
     }
 
     function reset() {
       filteredItems = [];
       menuElements = [];
-      menuContainer.innerHTML = '';
+      menuContainerElement.innerHTML = '';
     }
 
     const changeHighlightedMenuElementHandlers = {
@@ -140,9 +140,13 @@
       }
     };
 
-    element.addEventListener('keydown', function(event) {
+    inputElement.addEventListener('keydown', function(event) {
+      if (currentValue === '') {
+        reset();
+        return;
+      }
       // Record the value of the text box.
-      valueOnKeyDown = element.value;
+      valueOnKeyDown = inputElement.value;
       // Change the highlighted menu item when we hit the up and down keys.
       const handler = changeHighlightedMenuElementHandlers[event.keyCode];
       if (handler) {
@@ -150,12 +154,12 @@
       }
     });
 
-    element.addEventListener('keyup', function(event) {
+    inputElement.addEventListener('keyup', function(event) {
       // Update the autocomplete menu if we had not hit up and down keys and
-      // if the value of the text box has changed between the `keydown` and
-      // `keyup` events.
-      if (!changeHighlightedMenuElementHandlers[event.keyCode] && valueOnKeyDown !== element.value) {
-        currentValue = element.value;
+      // if the text box value had changed between the `keydown` and `keyup`
+      // events.
+      if (!changeHighlightedMenuElementHandlers[event.keyCode] && valueOnKeyDown !== inputElement.value) {
+        currentValue = inputElement.value;
         if (currentValue === '') {
           reset();
         } else {
