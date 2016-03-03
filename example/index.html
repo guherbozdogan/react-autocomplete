@@ -23,7 +23,7 @@
         }
       ];
       window.autoComplete(document.querySelector('.autocomplete'), {
-        getItemsCallback: function(value, element) {
+        getItems: function(value, element) {
           element.style.backgroundColor = 'yellow';
           return new Promise(function(callback) {
             setTimeout(function() {
@@ -32,15 +32,15 @@
             }, 500);
           });
         },
-        renderMenuItemCallback: function(item) {
+        renderMenuItem: function(item) {
           const element = document.createElement('div');
           element.innerHTML = '<span>' + item.value + '</span>';
           return element;
         },
-        highlightMenuElementCallback: function(menuElement) {
+        highlightMenuElement: function(menuElement) {
           menuElement.style.color = 'red';
         },
-        unhighlightMenuElementCallback: function(menuElement) {
+        unhighlightMenuElement: function(menuElement) {
           menuElement.style.color = 'black';
         }
       });

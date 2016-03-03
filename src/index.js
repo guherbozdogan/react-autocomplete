@@ -2,11 +2,12 @@
 
   const UP_ARROW_KEYCODE = 38;
   const DOWN_ARROW_KEYCODE = 40;
-  const requestAnimationFrame = window.requestAnimationFrame;
+
+  const HIGHLIGHTED_MENU_ELEMENT_CLASS = 'autocomplete__item--highlighted';
 
   const SENTINEL = -1;
 
-  const HIGHLIGHTED_MENU_ELEMENT_CLASS = 'autocomplete__item--highlighted';
+  const requestAnimationFrame = window.requestAnimationFrame;
 
   function autoComplete(element, options = {}) {
 
@@ -14,25 +15,25 @@
     const menuContainer = document.createElement('div');
     element.parentNode.insertBefore(menuContainer, element.nextSibling);
 
-    // Read off `options`.
-    const filterItemCallback = options.filterItemCallback || function(item) {
+    // Default options.
+    options.filterItems = options.filterItems || function(item) {
       const searchTerm = element.value.toLowerCase();
       return item.keys.filter(function(key) {
         return key.toLowerCase().indexOf(searchTerm) !== -1;
       }).length > 0;
     };
-    const renderMenuItemCallback = options.renderMenuItemCallback || function(item) {
+    options.renderMenuItem = options.renderMenuItem || function(item) {
       const menuItemElement = document.createElement('div');
       menuItemElement.innerHTML = item.value;
       return menuItemElement;
     };
-    const highlightMenuElementCallback = options.highlightMenuElementCallback || function(menuItemElement) {
+    options.highlightMenuElement = options.highlightMenuElement || function(menuItemElement) {
       menuItemElement.classList.add(HIGHLIGHTED_MENU_ELEMENT_CLASS);
     };
-    const unhighlightMenuElementCallback = options.unhighlightMenuElementCallback || function(menuItemElement) {
+    options.unhighlightMenuElement = options.unhighlightMenuElement || function(menuItemElement) {
       menuItemElement.classList.remove(HIGHLIGHTED_MENU_ELEMENT_CLASS);
     };
-    const getItemsCallback = options.getItemsCallback || function() {
+    options.getItems = options.getItems || function() {
       return [];
     };
 
@@ -83,7 +84,7 @@
         // Set the text box value to that of the highlight item.
         element.value = filteredItems[index].value;
         // Highlight the DOM menu element at `index`.
-        highlightMenuElementCallback(menuElements[index]);
+        options.highlightMenuElement(menuElements[index]);
       } else {
         // Revert the value of text box.
         element.value = currentValue;
@@ -95,7 +96,7 @@
     function unhighlightMenuElement(index) {
       if (index !== SENTINEL) {
         // Unhighlight the DOM menu element at `index`.
-        unhighlightMenuElementCallback(menuElements[index]);
+        options.unhighlightMenuElement(menuElements[index]);
       }
     }
 
@@ -105,11 +106,11 @@
     }
 
     function updateAutoCompleteMenu(value) {
-      getItemsCallback(value, element).then(function(items) {
+      options.getItems(value, element).then(function(items) {
         // Filter the returned `items` using the `filterItemCallback`.
-        filteredItems = items.filter(filterItemCallback);
+        filteredItems = items.filter(options.filterItems);
         menuElements = filteredItems.map(function(filteredItem) {
-          return renderMenuItemCallback(filteredItem);
+          return options.renderMenuItem(filteredItem);
         });
         // Append all the `menuElements` to `menuContainer`.
         menuContainer.innerHTML = '';
