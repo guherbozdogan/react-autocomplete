@@ -131,6 +131,7 @@
         menuContainerElement.appendChild(menuElement);
       });
       showMenu();
+      unhighlightMenuElement(highlightedIndex);
       highlightedIndex = SENTINEL;
     }
 
@@ -145,11 +146,9 @@
         matchedItems = items.filter(options.filterItems);
         // Add the current set of `matchedItems` to the cache.
         matchedItemsCache[value] = matchedItems;
-        // Exit if:
-        // 1. This particular call to `getItems` is "stale" (ie. superseded by
-        //    a later call).
-        // 2. The text box is currently empty.
-        if (uuid !== currentUuid || inputElement.value === '') {
+        // Exit if this particular call to `getItems` is "stale" (ie.
+        // superseded by a later call).
+        if (currentUuid && currentUuid !== uuid) {
           return;
         }
         renderMenuElements();
