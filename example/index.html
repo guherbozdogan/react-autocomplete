@@ -3,9 +3,16 @@
   <head>
     <title>autocomplete</title>
     <meta charset="utf-8">
+    <style>
+      .autocomplete {position: relative; }
+      .autocomplete__menu {position: absolute; top: 100%; left: 0; }
+    </style>
   </head>
   <body>
-    <input type="text" class="autocomplete" />
+    <div class="autocomplete">
+      <input type="text" class="autocomplete__input" tabindex="1" />
+      <div class="autocomplete__menu"></div>
+    </div>
     <script src="/lib/index.js"></script>
     <script>
       const items = [
@@ -38,7 +45,9 @@
           keys: ['ruby on rails', 'ruby', 'rails']
         }
       ];
-      window.autoComplete(document.querySelector('.autocomplete'), {
+      var inputElement = document.querySelector('.autocomplete__input');
+      var menuContainerElement = document.querySelector('.autocomplete__menu');
+      window.autoComplete(inputElement, menuContainerElement, {
         getItems: function(value, element) {
           element.style.backgroundColor = 'yellow';
           return new Promise(function(callback) {
@@ -47,11 +56,6 @@
               callback(items);
             }, 500);
           });
-        },
-        renderMenuItem: function(item) {
-          const element = document.createElement('div');
-          element.innerHTML = item.value;
-          return element;
         },
         highlightMenuElement: function(menuElement) {
           menuElement.style.color = 'red';
