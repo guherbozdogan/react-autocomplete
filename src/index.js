@@ -15,22 +15,26 @@
     inputElement.parentNode.insertBefore(menuContainerElement, inputElement.nextSibling);
 
     // Default options.
-    options.filterItems = options.filterItems || function(item) {
-      const searchTerm = inputElement.value.toLowerCase();
-      return item.keys.filter(function(key) {
-        return key.toLowerCase().indexOf(searchTerm) !== -1;
-      }).length > 0;
+    options.filterItems = options.filterItems || function(items) {
+      return items.filter(function(item) {
+        const searchTerm = inputElement.value.toLowerCase();
+        return item.keys.filter(function(key) {
+          return key.toLowerCase().indexOf(searchTerm) !== -1;
+        }).length > 0;
+      });
     };
-    options.renderMenuItem = options.renderMenuItem || function(item) {
-      const menuItemElement = document.createElement('div');
-      menuItemElement.innerHTML = item.value;
-      return menuItemElement;
+    options.renderMenuElements = options.renderMenuElements || function(matchedItems) {
+      return matchedItems.map(function(matchedItem) {
+        const menuItemElement = document.createElement('div');
+        menuItemElement.innerHTML = matchedItem.value;
+        return menuItemElement;
+      });
     };
-    options.highlightMenuElement = options.highlightMenuElement || function(menuItemElement) {
-      menuItemElement.classList.add(ITEM_HIGHLIGHTED_CLASS);
+    options.highlightMenuElement = options.highlightMenuElement || function(menuElement) {
+      menuElement.classList.add(ITEM_HIGHLIGHTED_CLASS);
     };
-    options.unhighlightMenuElement = options.unhighlightMenuElement || function(menuItemElement) {
-      menuItemElement.classList.remove(ITEM_HIGHLIGHTED_CLASS);
+    options.unhighlightMenuElement = options.unhighlightMenuElement || function(menuElement) {
+      menuElement.classList.remove(ITEM_HIGHLIGHTED_CLASS);
     };
     options.showMenu = options.showMenu || function() {
       menuContainerElement.style.display = 'block';
@@ -122,9 +126,7 @@
     }
 
     function renderMenuElements() {
-      menuElements = matchedItems.map(function(filteredItem) {
-        return options.renderMenuItem(filteredItem);
-      });
+      menuElements = options.renderMenuElements(matchedItems);
       // Append all the `menuElements` to `menuContainerElement`.
       menuContainerElement.innerHTML = '';
       menuElements.forEach(function(menuElement) {
@@ -143,7 +145,7 @@
       }
       options.getItems(value, inputElement).then(function(items) {
         // Filter the returned `items`.
-        matchedItems = items.filter(options.filterItems);
+        matchedItems = options.filterItems(items);
         // Add the current set of `matchedItems` to the cache.
         matchedItemsCache[value] = matchedItems;
         // Exit if this particular call to `getItems` is "stale" (ie.
@@ -177,7 +179,7 @@
       uuid = 0;
     }
 
-    const changeHighlightedMenuElementHandlers = {
+    const keydownHandlers = {
       [ENTER_KEYCODE]: function() {
         if (matchedItems[highlightedIndex]) {
           currentValue = matchedItems[highlightedIndex].value;
@@ -205,25 +207,26 @@
         reset();
         return;
       }
-      // Change the highlighted menu item when we press the up and down keys.
-      const handler = changeHighlightedMenuElementHandlers[event.keyCode];
+      // Run the handler corresponding to the key that was pressed.
+      const handler = keydownHandlers[event.keyCode];
       if (handler) {
-        handler(event);
+        handler();
       }
     });
 
     inputElement.addEventListener('keyup', function(event) {
-      // Update the autocomplete menu if:
-      // 1. We had pressed a key other than the up and down keys
-      // 2. The text box value had changed between the `keydown` and
+      // Exit if:
+      // 1. We had pressed the up, down, or enter keys.
+      // 2. The text box value did not change between the `keydown` and
       //    `keyup` events.
-      if (!changeHighlightedMenuElementHandlers[event.keyCode] && valueOnKeyDown !== inputElement.value) {
-        currentValue = inputElement.value;
-        if (currentValue === '') {
-          reset();
-        } else {
-          updateMenu(currentValue, ++uuid);
-        }
+      if (keydownHandlers[event.keyCode] || valueOnKeyDown === inputElement.value) {
+        return;
+      }
+      currentValue = inputElement.value;
+      if (currentValue === '') {
+        reset();
+      } else {
+        updateMenu(currentValue, ++uuid);
       }
     });
 
