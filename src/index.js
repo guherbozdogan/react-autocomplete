@@ -4,17 +4,13 @@
   const DOWN_ARROW_KEYCODE = 40;
   const ENTER_KEYCODE = 13;
 
-  const ITEM_HIGHLIGHTED_CLASS = 'autocomplete__item--highlighted';
+  const HIGHLIGHTED_ITEM_CLASS = 'autocomplete__menu-item--highlighted';
 
   const SENTINEL = -1;
 
-  function autoComplete(inputElement, options = {}) {
+  function autoComplete(inputElement, menuContainerElement, options = {}) {
 
-    // Create a container that will contain the menu elements.
-    const menuContainerElement = document.createElement('div');
-    inputElement.parentNode.insertBefore(menuContainerElement, inputElement.nextSibling);
-
-    // Default options.
+    // Callbacks.
     options.filterItems = options.filterItems || function(items) {
       return items.filter(function(item) {
         const searchTerm = inputElement.value.toLowerCase();
@@ -31,10 +27,10 @@
       });
     };
     options.highlightMenuElement = options.highlightMenuElement || function(menuElement) {
-      menuElement.classList.add(ITEM_HIGHLIGHTED_CLASS);
+      menuElement.classList.add(HIGHLIGHTED_ITEM_CLASS);
     };
     options.unhighlightMenuElement = options.unhighlightMenuElement || function(menuElement) {
-      menuElement.classList.remove(ITEM_HIGHLIGHTED_CLASS);
+      menuElement.classList.remove(HIGHLIGHTED_ITEM_CLASS);
     };
     options.showMenu = options.showMenu || function() {
       menuContainerElement.style.display = 'block';
@@ -219,10 +215,10 @@
       // 1. We had pressed the up, down, or enter keys.
       // 2. The text box value did not change between the `keydown` and
       //    `keyup` events.
-      if (keydownHandlers[event.keyCode] || valueOnKeyDown === inputElement.value) {
+      currentValue = inputElement.value;
+      if (keydownHandlers[event.keyCode] || valueOnKeyDown === currentValue) {
         return;
       }
-      currentValue = inputElement.value;
       if (currentValue === '') {
         reset();
       } else {
