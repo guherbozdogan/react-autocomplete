@@ -3,14 +3,47 @@
   <head>
     <title>autocomplete</title>
     <meta charset="utf-8">
-    <style>
-    </style>
   </head>
   <body>
     <input type="text" class="autocomplete" />
     <script src="/lib/index.js"></script>
     <script>
-      window.autoComplete(document.querySelector('.autocomplete'));
+      const items = [
+        {
+          value: 'Java',
+          keys: ['java', 'programming', 'server']
+        },
+        {
+          value: 'JavaScript',
+          keys: ['javascript', 'programming', 'client']
+        },
+        {
+          value: 'Ruby',
+          keys: ['ruby', 'programming', 'server']
+        }
+      ];
+      window.autoComplete(document.querySelector('.autocomplete'), {
+        getItemsCallback: function(value, element) {
+          element.style.backgroundColor = 'yellow';
+          return new Promise(function(callback) {
+            setTimeout(function() {
+              element.style.backgroundColor = 'white';
+              callback(items);
+            }, 500);
+          });
+        },
+        renderMenuItemCallback: function(item) {
+          const element = document.createElement('div');
+          element.innerHTML = '<span>' + item.value + '</span>';
+          return element;
+        },
+        highlightMenuElementCallback: function(menuElement) {
+          menuElement.style.color = 'red';
+        },
+        unhighlightMenuElementCallback: function(menuElement) {
+          menuElement.style.color = 'black';
+        }
+      });
     </script>
   </body>
 </html>
