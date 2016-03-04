@@ -29,31 +29,38 @@
       const items = [
         {
           value: 'Ada',
-          keys: ['ada']
+          keys: ['ada'],
+          type: 'foo'
         },
         {
           value: 'Brainfuck',
-          keys: ['brainfuck', 'esoteric']
+          keys: ['brainfuck', 'esoteric'],
+          type: 'foo'
         },
         {
           value: 'Java',
-          keys: ['java']
+          keys: ['java'],
+          type: 'bar'
         },
         {
           value: 'JavaScript',
-          keys: ['javascript', 'js']
+          keys: ['javascript', 'js'],
+          type: 'bar'
         },
         {
           value: 'LOLCODE',
-          keys: ['lolcode', 'lolspeak', 'esoteric']
+          keys: ['lolcode', 'lolspeak', 'esoteric'],
+          type: 'foo'
         },
         {
           value: 'Node.js',
-          keys: ['javascript', 'js', 'node', 'node.js', 'nodejs']
+          keys: ['javascript', 'js', 'node', 'node.js', 'nodejs'],
+          type: 'bar'
         },
         {
           value: 'Ruby on Rails',
-          keys: ['ruby on rails', 'ruby', 'rails']
+          keys: ['ruby on rails', 'ruby', 'rails'],
+          type: 'foo'
         }
       ];
       var inputElement = document.querySelector('.autocomplete__text-box');
@@ -68,11 +75,14 @@
             }, 500);
           });
         },
-        renderMenuElements: function(matchedItems) {
-          return matchedItems.map(function(matchedItem) {
-            const menuItemElement = document.createElement('div');
-            menuItemElement.innerHTML = matchedItem.value;
-            return menuItemElement;
+        renderMenuElement: function(matchedItem) {
+          const menuItemElement = document.createElement('div');
+          menuItemElement.innerHTML = matchedItem.value;
+          return menuItemElement;
+        },
+        renderMenuElements: function(menuElements, menuContainerElement) {
+          menuElements.forEach(function(menuElement) {
+            menuContainerElement.appendChild(menuElement);
           });
         },
         highlightMenuElement: function(item, menuElement) {
