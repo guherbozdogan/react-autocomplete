@@ -36,7 +36,16 @@
   },
   "scripts": {
     "lint": "gulp lint",
-    "prepublish": "gulp build"
+    "prepublish": "gulp build",
+    "start": "gulp example"
   },
-  "keywords": []
+  "keywords": [
+    "autocomplete",
+    "dom",
+    "html",
+    "input",
+    "menu",
+    "text",
+    "vanilla"
+  ]
 }
