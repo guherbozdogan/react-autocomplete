@@ -21,11 +21,14 @@
         }).length > 0;
       });
     };
-    options.renderMenuElements = options.renderMenuElements || function(matchedItems) {
-      return matchedItems.map(function(matchedItem) {
-        const menuItemElement = document.createElement('div');
-        menuItemElement.innerHTML = matchedItem.value;
-        return menuItemElement;
+    options.renderMenuElement = options.renderMenuElement || function(matchedItem) {
+      const menuElement = document.createElement('div');
+      menuElement.innerHTML = matchedItem.value;
+      return menuElement;
+    };
+    options.renderMenuElements = options.renderMenuElements || function(menuElements, menuContainerElement) {
+      menuElements.forEach(function(menuElement) {
+        menuContainerElement.appendChild(menuElement);
       });
     };
     options.highlightMenuElement = options.highlightMenuElement || function(menuElement) {
@@ -130,21 +133,20 @@
     }
 
     function renderMenuElements() {
-      menuElements = options.renderMenuElements(matchedItems);
-      // Hook up `mouseover` events to each item in `menuElements`.
-      menuElements.forEach(function(menuElement, index) {
+      menuElements = matchedItems.map(function(matchedItem, index) {
+        const menuElement = options.renderMenuElement(matchedItem);
+        // Hook up `mouseover` events to each item in `menuElements`.
         menuElement.addEventListener('click', function() {
           unhighlightMenuElement(highlightedIndex);
           highlightedIndex = index;
           highlightMenuElement(highlightedIndex);
           selectHighlightedMenuElement();
         });
+        return menuElement;
       });
       // Append all the `menuElements` to `menuContainerElement`.
       menuContainerElement.innerHTML = '';
-      menuElements.forEach(function(menuElement) {
-        menuContainerElement.appendChild(menuElement);
-      });
+      options.renderMenuElements(menuElements, menuContainerElement);
       showMenu();
       // Unhighlight the highlighted menu element.
       unhighlightMenuElement(highlightedIndex);
