@@ -24,6 +24,7 @@
       <input type="text" class="autocomplete__text-box" tabindex="1" />
       <div class="autocomplete__menu"></div>
     </div>
+    <input type="text" tabindex="1" />
     <script src="/lib/index.js"></script>
     <script>
       const items = [
@@ -38,6 +39,16 @@
           type: 'foo'
         },
         {
+          value: 'LOLCODE',
+          keys: ['lolcode', 'lolspeak', 'esoteric'],
+          type: 'foo'
+        },
+        {
+          value: 'Ruby on Rails',
+          keys: ['ruby on rails', 'ruby', 'rails'],
+          type: 'foo'
+        },
+        {
           value: 'Java',
           keys: ['java'],
           type: 'bar'
@@ -48,19 +59,9 @@
           type: 'bar'
         },
         {
-          value: 'LOLCODE',
-          keys: ['lolcode', 'lolspeak', 'esoteric'],
-          type: 'foo'
-        },
-        {
           value: 'Node.js',
           keys: ['javascript', 'js', 'node', 'node.js', 'nodejs'],
           type: 'bar'
-        },
-        {
-          value: 'Ruby on Rails',
-          keys: ['ruby on rails', 'ruby', 'rails'],
-          type: 'foo'
         }
       ];
       var inputElement = document.querySelector('.autocomplete__text-box');
@@ -78,6 +79,7 @@
         renderMenuElement: function(matchedItem) {
           const menuItemElement = document.createElement('div');
           menuItemElement.innerHTML = matchedItem.value;
+          menuItemElement.classList.add(matchedItem.type);
           return menuItemElement;
         },
         renderMenuElements: function(menuElements, menuContainerElement) {
@@ -94,8 +96,12 @@
           menuElement.style.backgroundColor = 'transparent';
         },
         selectMenuElement: function(item, matchedElement) {
+          console.log('selectMenuElement', item);
           matchedElement.style.color = 'white';
           matchedElement.style.backgroundColor = 'green';
+        },
+        enterKeyDown: function(value) {
+          console.log('enterKeyDown', value);
         }
       });
     </script>

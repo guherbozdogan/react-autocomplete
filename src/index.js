@@ -21,6 +21,11 @@
         }).length > 0;
       });
     };
+    options.getItems = options.getItems || function() {
+      return new Promise(function(callback) {
+        callback([]);
+      });
+    };
     options.renderMenuElement = options.renderMenuElement || function(matchedItem) {
       const menuElement = document.createElement('div');
       menuElement.innerHTML = matchedItem.value;
@@ -44,11 +49,7 @@
       menuContainerElement.style.display = 'none';
     };
     options.selectMenuElement = options.selectMenuElement || noop;
-    options.getItems = options.getItems || function() {
-      return new Promise(function(callback) {
-        callback([]);
-      });
-    };
+    options.enterKeyDown = options.enterKeyDown || noop;
 
     // Cache for matched items; maps each `value` to the array of matched items.
     const matchedItemsCache = {};
@@ -108,12 +109,14 @@
         inputElement.value = matchedItem.value;
         // Highlight the menu element at `index`.
         options.highlightMenuElement(matchedItem, menuElements[index]);
+        // Move the input caret to the end of the text box in the next frame.
+        window.requestAnimationFrame(highlightTextBoxValue);
       } else {
         // Revert to the original user-input value.
         inputElement.value = initialValue;
+        // Move the input caret to the end of the text box in the next frame.
+        window.requestAnimationFrame(moveCaretToEnd);
       }
-      // Move the input cursor to the end of the text box in the next frame.
-      window.requestAnimationFrame(moveCaretToEnd);
     }
 
     function unhighlightMenuElement(index) {
@@ -121,6 +124,11 @@
         // Unhighlight the menu element at `index`.
         options.unhighlightMenuElement(matchedItems[index], menuElements[index]);
       }
+    }
+
+    function highlightTextBoxValue() {
+      const length = inputElement.value.length;
+      inputElement.setSelectionRange(0, length);
     }
 
     function moveCaretToEnd() {
@@ -135,7 +143,7 @@
     function renderMenuElements() {
       menuElements = matchedItems.map(function(matchedItem, index) {
         const menuElement = options.renderMenuElement(matchedItem);
-        // Hook up `mouseover` events to each item in `menuElements`.
+        // Hook up `click` events to each item in `menuElements`.
         menuElement.addEventListener('click', function() {
           unhighlightMenuElement(highlightedIndex);
           highlightedIndex = index;
@@ -197,7 +205,13 @@
     }
 
     const keydownHandlers = {
-      [ENTER_KEYCODE]: selectHighlightedMenuElement,
+      [ENTER_KEYCODE]: function() {
+        if (highlightedIndex !== SENTINEL) {
+          selectHighlightedMenuElement();
+        } else {
+          options.enterKeyDown(inputElement.value);
+        }
+      },
       [UP_ARROW_KEYCODE]: function() {
         unhighlightMenuElement(highlightedIndex);
         decrementHighlightedIndex();
