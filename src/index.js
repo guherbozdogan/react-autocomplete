@@ -234,6 +234,10 @@
       showMenu();
     });
 
+    menuContainerElement.addEventListener('mousedown', function(event) {
+      event.preventDefault();
+    });
+
   }
 
   if (typeof module === 'object') {
