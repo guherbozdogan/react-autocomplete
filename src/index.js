@@ -101,9 +101,10 @@
     function highlightMenuElement(index) {
       if (index !== SENTINEL && menuElements[index]) {
         // Set the text box value to that of the highlight item.
-        inputElement.value = matchedItems[index].value;
+        const matchedItem = matchedItems[index];
+        inputElement.value = matchedItem.value;
         // Highlight the menu element at `index`.
-        options.highlightMenuElement(menuElements[index]);
+        options.highlightMenuElement(matchedItem, menuElements[index]);
       } else {
         // Revert to the original user-input value.
         inputElement.value = initialValue;
@@ -115,7 +116,7 @@
     function unhighlightMenuElement(index) {
       if (index !== SENTINEL && menuElements[index]) {
         // Unhighlight the menu element at `index`.
-        options.unhighlightMenuElement(menuElements[index]);
+        options.unhighlightMenuElement(matchedItems[index], menuElements[index]);
       }
     }
 

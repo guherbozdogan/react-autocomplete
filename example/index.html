@@ -68,20 +68,20 @@
             }, 500);
           });
         },
-        highlightMenuElement: function(menuElement) {
-          menuElement.style.color = 'white';
-          menuElement.style.backgroundColor = 'blue';
-        },
-        unhighlightMenuElement: function(menuElement) {
-          menuElement.style.color = 'black';
-          menuElement.style.backgroundColor = 'transparent';
-        },
         renderMenuElements: function(matchedItems) {
           return matchedItems.map(function(matchedItem) {
             const menuItemElement = document.createElement('div');
             menuItemElement.innerHTML = matchedItem.value;
             return menuItemElement;
           });
+        },
+        highlightMenuElement: function(item, menuElement) {
+          menuElement.style.color = 'white';
+          menuElement.style.backgroundColor = 'blue';
+        },
+        unhighlightMenuElement: function(item, menuElement) {
+          menuElement.style.color = 'black';
+          menuElement.style.backgroundColor = 'transparent';
         },
         selectMenuElement: function(item, matchedElement) {
           matchedElement.style.color = 'white';
