@@ -24,68 +24,38 @@
       <input type="text" class="autocomplete__text-box" tabindex="1" />
       <div class="autocomplete__menu"></div>
     </div>
-    <input type="text" tabindex="1" />
+    <script src="https://npmcdn.com/fetch-jsonp@1.0.0"></script>
     <script src="/lib/index.js"></script>
     <script>
-      const items = [
-        {
-          value: 'Ada',
-          keys: ['ada'],
-          type: 'foo'
-        },
-        {
-          value: 'Brainfuck',
-          keys: ['brainfuck', 'esoteric'],
-          type: 'foo'
-        },
-        {
-          value: 'LOLCODE',
-          keys: ['lolcode', 'lolspeak', 'esoteric'],
-          type: 'foo'
-        },
-        {
-          value: 'Ruby on Rails',
-          keys: ['ruby on rails', 'ruby', 'rails'],
-          type: 'foo'
-        },
-        {
-          value: 'Java',
-          keys: ['java'],
-          type: 'bar'
-        },
-        {
-          value: 'JavaScript',
-          keys: ['javascript', 'js'],
-          type: 'bar'
-        },
-        {
-          value: 'Node.js',
-          keys: ['javascript', 'js', 'node', 'node.js', 'nodejs'],
-          type: 'bar'
-        }
-      ];
       var inputElement = document.querySelector('.autocomplete__text-box');
       var menuContainerElement = document.querySelector('.autocomplete__menu');
       window.autoComplete(inputElement, menuContainerElement, {
         getItems: function(value) {
           inputElement.style.backgroundColor = 'yellow';
-          return new Promise(function(callback) {
-            setTimeout(function() {
-              inputElement.style.backgroundColor = 'white';
-              callback(items);
-            }, 500);
-          });
+          return window.fetchJsonp('http://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=' + value)
+            .then(function(response) {
+              inputElement.style.backgroundColor = 'transparent';
+              return response.json();
+            }).then(function(json) {
+              var values = json[1];
+              var descriptions = json[2];
+              var links = json[3];
+              return values.map(function(value, index) {
+                return {
+                  value: value,
+                  keys: [
+                    value,
+                    descriptions[index]
+                  ],
+                  link: links[index]
+                }
+              });
+            })
         },
-        renderMenuElement: function(matchedItem) {
+        renderMenuElement: function(item) {
           const menuItemElement = document.createElement('div');
-          menuItemElement.innerHTML = matchedItem.value;
-          menuItemElement.classList.add(matchedItem.type);
+          menuItemElement.innerHTML = item.value;
           return menuItemElement;
-        },
-        renderMenuElements: function(menuElements, menuContainerElement) {
-          menuElements.forEach(function(menuElement) {
-            menuContainerElement.appendChild(menuElement);
-          });
         },
         highlightMenuElement: function(item, menuElement) {
           menuElement.style.color = 'white';
@@ -96,12 +66,12 @@
           menuElement.style.backgroundColor = 'transparent';
         },
         selectMenuElement: function(item, matchedElement) {
-          console.log('selectMenuElement', item);
           matchedElement.style.color = 'white';
           matchedElement.style.backgroundColor = 'green';
+          // window.location.href = item.link;
         },
         enterKeyDown: function(value) {
-          console.log('enterKeyDown', value);
+          // window.location.href = 'http://en.wikipedia.org/wiki/Special:Search?search=' + value;
         }
       });
     </script>

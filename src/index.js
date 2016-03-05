@@ -1,8 +1,9 @@
 (function() {
 
+  const ENTER_KEYCODE = 13;
+  const ESCAPE_KEYCODE = 27;
   const UP_ARROW_KEYCODE = 38;
   const DOWN_ARROW_KEYCODE = 40;
-  const ENTER_KEYCODE = 13;
 
   const HIGHLIGHTED_ITEM_CLASS = 'autocomplete__menu-item--highlighted';
 
@@ -14,12 +15,7 @@
 
     // Callbacks.
     options.filterItems = options.filterItems || function(items) {
-      return items.filter(function(item) {
-        const searchTerm = inputElement.value.toLowerCase();
-        return item.keys.filter(function(key) {
-          return key.toLowerCase().indexOf(searchTerm) !== -1;
-        }).length > 0;
-      });
+      return items;
     };
     options.getItems = options.getItems || function() {
       return new Promise(function(callback) {
@@ -57,9 +53,6 @@
     // Store the initial, user-input value of the text box.
     let initialValue = '';
 
-    // Store the value of the text box on every `keydown` event.
-    let valueOnKeyDown = '';
-
     // Stores items that match `initialValue`.
     let matchedItems = [];
 
@@ -69,12 +62,6 @@
 
     // The index of the highlighted DOM element in `menuElements`.
     let highlightedIndex = SENTINEL;
-
-    // Whether the menu is visible.
-    let isVisible = false;
-
-    // Sentinel for indicating whether we should cancel "stale" calls to `getItems`.
-    let uuid = 0;
 
     function decrementHighlightedIndex() {
       switch (highlightedIndex) {
@@ -102,6 +89,13 @@
       }
     }
 
+    function unhighlightMenuElement(index) {
+      if (index !== SENTINEL && menuElements[index]) {
+        // Unhighlight the menu element at `index`.
+        options.unhighlightMenuElement(matchedItems[index], menuElements[index]);
+      }
+    }
+
     function highlightMenuElement(index) {
       if (index !== SENTINEL && menuElements[index]) {
         // Set the text box value to that of the highlight item.
@@ -116,13 +110,6 @@
         inputElement.value = initialValue;
         // Move the input caret to the end of the text box in the next frame.
         window.requestAnimationFrame(moveCaretToEnd);
-      }
-    }
-
-    function unhighlightMenuElement(index) {
-      if (index !== SENTINEL && menuElements[index]) {
-        // Unhighlight the menu element at `index`.
-        options.unhighlightMenuElement(matchedItems[index], menuElements[index]);
       }
     }
 
@@ -141,16 +128,8 @@
     }
 
     function renderMenuElements() {
-      menuElements = matchedItems.map(function(matchedItem, index) {
-        const menuElement = options.renderMenuElement(matchedItem);
-        // Hook up `click` events to each item in `menuElements`.
-        menuElement.addEventListener('click', function() {
-          unhighlightMenuElement(highlightedIndex);
-          highlightedIndex = index;
-          highlightMenuElement(highlightedIndex);
-          selectHighlightedMenuElement();
-        });
-        return menuElement;
+      menuElements = matchedItems.map(function(matchedItem) {
+        return options.renderMenuElement(matchedItem);
       });
       // Append all the `menuElements` to `menuContainerElement`.
       menuContainerElement.innerHTML = '';
@@ -161,33 +140,34 @@
       highlightedIndex = SENTINEL;
     }
 
-    function updateMenu(value, currentUuid) {
-      if (matchedItemsCache[value]) {
-        matchedItems = matchedItemsCache[value];
-        renderMenuElements();
-        return;
-      }
-      options.getItems(value).then(function(items) {
-        // Filter the returned `items`.
-        matchedItems = options.filterItems(items);
-        // Add the current set of `matchedItems` to the cache.
-        matchedItemsCache[value] = matchedItems;
-        // Exit if this particular call to `getItems` is "stale" (ie.
-        // superseded by a later call).
-        if (currentUuid && currentUuid !== uuid) {
+    let timeout;
+    function updateMenu(value) {
+      // Debounce.
+      clearTimeout(timeout);
+      timeout = setTimeout(function() {
+        timeout = null;
+        if (matchedItemsCache[value]) {
+          matchedItems = matchedItemsCache[value];
+          renderMenuElements();
           return;
         }
-        renderMenuElements();
-      });
+        options.getItems(value).then(function(items) {
+          // Filter the returned `items`.
+          matchedItems = options.filterItems(items);
+          // Add the current set of `matchedItems` to the cache.
+          matchedItemsCache[value] = matchedItems;
+          renderMenuElements();
+        });
+      }, 200);
     }
 
+    let isVisible = false;
     function hideMenu() {
       if (isVisible) {
         options.hideMenu(menuContainerElement);
         isVisible = false;
       }
     }
-
     function showMenu() {
       if (!isVisible && matchedItems.length > 0) {
         options.showMenu(menuContainerElement);
@@ -197,20 +177,26 @@
 
     function reset() {
       matchedItems = [];
+      // Explicitly `null` out references to each `menuElement`.
+      menuElements.forEach(function(menuElement, index) {
+        menuElements[index] = null;
+      });
       menuElements = [];
       menuContainerElement.innerHTML = '';
       highlightedIndex = SENTINEL;
       hideMenu();
-      uuid = 0;
     }
 
     const keydownHandlers = {
       [ENTER_KEYCODE]: function() {
-        if (highlightedIndex !== SENTINEL) {
-          selectHighlightedMenuElement();
-        } else {
+        if (highlightedIndex === SENTINEL) {
           options.enterKeyDown(inputElement.value);
+        } else {
+          selectHighlightedMenuElement();
         }
+      },
+      [ESCAPE_KEYCODE]: function() {
+        inputElement.blur();
       },
       [UP_ARROW_KEYCODE]: function() {
         unhighlightMenuElement(highlightedIndex);
@@ -224,9 +210,11 @@
       }
     };
 
-    inputElement.addEventListener('keydown', function(event) {
+    let valueOnKeyDown = '';
+
+    function inputElementOnKeyDown(event) {
       // Record the value of the text box on `keydown`.
-      valueOnKeyDown = inputElement.value;
+      valueOnKeyDown = inputElement.value.trim();
       // Reset if the text box is empty.
       if (valueOnKeyDown === '') {
         reset();
@@ -237,10 +225,11 @@
       if (handler) {
         handler();
       }
-    });
+    }
+    inputElement.addEventListener('keydown', inputElementOnKeyDown);
 
-    inputElement.addEventListener('keyup', function(event) {
-      const value = inputElement.value;
+    function inputElementOnKeyUp(event) {
+      const value = inputElement.value.trim();
       // Reset if the textbox is currently empty
       if (value === '') {
         reset();
@@ -258,21 +247,56 @@
       if (highlightedIndex === SENTINEL) {
         initialValue = value;
       }
-      updateMenu(value, ++uuid);
-    });
+      updateMenu(value);
+    }
+    inputElement.addEventListener('keyup', inputElementOnKeyUp);
 
     // Show and hide the menu respectively on `focus` and on `blur`.
-    inputElement.addEventListener('focus', function() {
-      showMenu();
-    });
-    inputElement.addEventListener('blur', function() {
-      hideMenu();
-    });
+    inputElement.addEventListener('focus', showMenu);
+    inputElement.addEventListener('blur', hideMenu);
 
-    // Stop the text box from losing focus when we click on a menu item.
-    menuContainerElement.addEventListener('mousedown', function(event) {
+    // Helper to find the index of the element in `menuElements` that
+    // was clicked. Recursive; walks up the DOM tree towards
+    // `menuContainerElement`.
+    function findClickedMenuElementIndex(element) {
+      if (!element || element === menuContainerElement) {
+        return -1;
+      }
+      const index = menuElements.indexOf(element);
+      if (index !== -1) {
+        return index;
+      }
+      return findClickedMenuElementIndex(element.parentNode);
+    }
+    function menuContainerElementOnClick(event) {
+      const clickedMenuElementIndex = findClickedMenuElementIndex(event.target);
+      if (clickedMenuElementIndex !== -1) {
+        // Highlight the clicked menu element.
+        unhighlightMenuElement(highlightedIndex);
+        highlightedIndex = clickedMenuElementIndex;
+        highlightMenuElement(highlightedIndex);
+        // Select the clicked menu element.
+        selectHighlightedMenuElement();
+      }
+    }
+    menuContainerElement.addEventListener('click', menuContainerElementOnClick);
+
+    // Prevent the text box from losing focus when we click on a menu item.
+    function menuContainerElementOnMouseDown(event) {
       event.preventDefault();
-    });
+    }
+    menuContainerElement.addEventListener('mousedown', menuContainerElementOnMouseDown);
+
+    // Return a function for removing all the event listeners we had bound.
+    return function() {
+      reset();
+      inputElement.removeEventListener('keydown', inputElementOnKeyDown);
+      inputElement.removeEventListener('keyup', inputElementOnKeyUp);
+      inputElement.removeEventListener('focus', showMenu);
+      inputElement.removeEventListener('blur', hideMenu);
+      menuContainerElement.removeEventListener('click', menuContainerElementOnClick);
+      menuContainerElement.removeEventListener('mousedown', menuContainerElementOnMouseDown);
+    };
 
   }
 
