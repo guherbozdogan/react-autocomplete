@@ -7,6 +7,7 @@ const SENTINEL = -1;
 
 const initialState = {
   highlightedIndex: SENTINEL,
+  initialValue: '',
   isLoading: false,
   isMenuVisible: false,
   items: [],
@@ -18,21 +19,23 @@ export default class Autocomplete extends Component {
     classNames: PropTypes.shape({
       list: PropTypes.string,
       item: PropTypes.string,
-      itemHighlighted: PropTypes.string,
-      textBox: PropTypes.string
+      itemIsHighlighted: PropTypes.string,
+      textBox: PropTypes.string,
+      textBoxIsLoading: PropTypes.string
     }),
     debounceDuration: PropTypes.number,
     getItems: PropTypes.func.isRequired,
     getValue: PropTypes.func,
     onEnterKeyDown: PropTypes.func,
-    renderItem: PropTypes.func
+    renderItem: PropTypes.func,
+    shouldCacheItems: PropTypes.bool
   };
 
   static defaultProps = {
     classNames: {
       list: 'list',
       item: 'item',
-      itemHighlighted: 'highlighted',
+      itemIsHighlighted: 'isHighlighted',
       textBox: 'textBox',
       textBoxIsLoading: 'isLoading'
     },
@@ -43,31 +46,11 @@ export default class Autocomplete extends Component {
     onEnterKeyDown: noop,
     renderItem: (item) => {
       return item.value;
-    }
+    },
+    shouldCacheItems: true
   };
 
   state = initialState;
-
-  constructor(props) {
-    super(props);
-    const {
-      classNames,
-      debounceDuration,
-      getItems,
-      getValue,
-      onEnterKeyDown,
-      renderItem
-    } = this.props;
-    this.classNames = classNames;
-    this.debounceDuration = debounceDuration;
-    this.getItems = getItems;
-    this.getValue = getValue;
-    this.initialValue = '';
-    this.itemsCache = {};
-    this.onEnterKeyDown = onEnterKeyDown;
-    this.renderItem = renderItem;
-    this.timeout = null;
-  }
 
   decrementHighlightedIndex = () => {
     const {
@@ -101,13 +84,17 @@ export default class Autocomplete extends Component {
   };
 
   setHighlightedIndex = (highlightedIndex) => {
-    const {items} = this.state;
+    const {getValue} = this.props;
+    const {
+      initialValue,
+      items
+    } = this.state;
     const isItemHighlighted = highlightedIndex !== SENTINEL;
     this.setState({
       highlightedIndex,
       value: isItemHighlighted
-        ? this.getValue(items[highlightedIndex])
-        : this.initialValue
+        ? getValue(items[highlightedIndex])
+        : initialValue
     });
     window.requestAnimationFrame(isItemHighlighted
       ? this.highlightTextBoxValue
@@ -151,24 +138,35 @@ export default class Autocomplete extends Component {
     this.showMenu();
   };
 
-  updateItems = (value) => {
-    clearTimeout(this.timeout);
-    const items = this.itemsCache[value];
-    if (items) {
-      this.setItems(items);
-      return;
-    }
-    this.timeout = setTimeout(() => {
-      this.timeout = null;
-      this.setState({
-        isLoading: true
-      });
-      this.getItems(value).then((items) => {
-        this.itemsCache[value] = items;
+  updateItems = (() => {
+    let timeout = null;
+    let itemsCache = {};
+    return (value) => {
+      const {
+        debounceDuration,
+        getItems,
+        shouldCacheItems
+      } = this.props;
+      clearTimeout(timeout);
+      const items = shouldCacheItems && itemsCache[value];
+      if (items) {
         this.setItems(items);
-      });
-    }, this.debounceDuration);
-  };
+        return;
+      }
+      timeout = setTimeout(() => {
+        timeout = null;
+        this.setState({
+          isLoading: true
+        });
+        getItems(value).then((items) => {
+          if (shouldCacheItems) {
+            itemsCache[value] = items;
+          }
+          this.setItems(items);
+        });
+      }, debounceDuration);
+    };
+  })();
 
   keyDownHandlers = {
     ArrowDown: () => {
@@ -178,12 +176,13 @@ export default class Autocomplete extends Component {
       this.setHighlightedIndex(this.decrementHighlightedIndex());
     },
     Enter: () => {
+      const {onEnterKeyDown} = this.props;
       const {
         highlightedIndex,
         items,
         value
       } = this.state;
-      this.onEnterKeyDown(value, items[highlightedIndex]);
+      onEnterKeyDown(value, items[highlightedIndex]);
     },
     Escape: () => {
       this.hideMenu();
@@ -200,7 +199,9 @@ export default class Autocomplete extends Component {
     if (keyDownHandler) {
       // Save the initial user input value.
       if (highlightedIndex === SENTINEL) {
-        this.initialValue = value;
+        this.setState({
+          initialValue: value
+        });
       }
       keyDownHandler(event);
     }
@@ -214,9 +215,9 @@ export default class Autocomplete extends Component {
       this.reset();
       return;
     }
-    this.initialValue = value;
     this.setState({
       highlightedIndex: SENTINEL,
+      initialValue: value,
       value
     });
     this.updateItems(value);
@@ -243,9 +244,13 @@ export default class Autocomplete extends Component {
       items,
       value
     } = this.state;
+    const {
+      classNames,
+      renderItem
+    } = this.props;
     return (
       <div>
-        <div className={classnames(this.classNames.textBox, isLoading && this.classNames.textBoxIsLoading)}>
+        <div className={classnames(classNames.textBox, isLoading && classNames.textBoxIsLoading)}>
           <input onBlur={this.handleBlur}
             onChange={this.handleChange}
             onFocus={this.handleFocus}
@@ -255,16 +260,16 @@ export default class Autocomplete extends Component {
             value={value} />
         </div>
         {isMenuVisible && items.length > 0 &&
-          <div className={this.classNames.list}
+          <div className={classNames.list}
             onMouseDown={this.handleMenuListMouseDown}>
             {items.map((item, index) => {
               return (
-                <div className={classnames(this.classNames.item, index === highlightedIndex && this.classNames.itemHighlighted)}
+                <div className={classnames(classNames.item, index === highlightedIndex && classNames.itemIsHighlighted)}
                   key={index}
                   onClick={() => {
                     this.handleItemClick(index);
                   }}>
-                  {this.renderItem(item)}
+                  {renderItem(item)}
                 </div>
               );
             })}

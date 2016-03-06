@@ -24,5 +24,8 @@ render((
             };
           });
         });
-    }} />
+    }}
+    onEnterKeyDown={(value, item) => {
+      console.log(value, item);
+    }}/>
 ), document.querySelector('.autocomplete'));
