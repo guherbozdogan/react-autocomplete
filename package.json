@@ -1,6 +1,6 @@
 {
   "name": "@yuanqing/autocomplete",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "React autocomplete component with an opinionated UX.",
   "author": "Lim Yuan Qing",
   "license": "MIT",
