@@ -14,16 +14,20 @@ export default class AutoComplete extends Component {
     getResultList: PropTypes.func.isRequired,
     onEnterKeyDown: PropTypes.func,
     onResultItemClick: PropTypes.func,
-    renderAfterResultList: PropTypes.func,
+    renderBeforeTextBox: PropTypes.func,
     renderAfterTextBox: PropTypes.func,
     renderBeforeResultList: PropTypes.func,
-    renderBeforeTextBox: PropTypes.func,
+    renderAfterResultList: PropTypes.func,
     renderResultItem: PropTypes.func.isRequired,
     shouldCacheResultList: PropTypes.bool
   };
 
   static defaultProps = {
-    children: <input type="text" />,
+    children: (
+      <input aria-autocomplete="both"
+        role="combobox"
+        type="text" />
+    ),
     classNames: {
       isHighlighted: 'isHighlighted',
       isLoading: 'isLoading',
@@ -265,10 +269,10 @@ export default class AutoComplete extends Component {
     const {
       children,
       classNames,
-      renderAfterResultList,
+      renderBeforeTextBox,
       renderAfterTextBox,
       renderBeforeResultList,
-      renderBeforeTextBox,
+      renderAfterResultList,
       renderResultItem
     } = this.props;
     const {
@@ -287,19 +291,17 @@ export default class AutoComplete extends Component {
           cloneElement(renderBeforeTextBox.call(this), onMouseDownProp)}
         <div className={classNames.textBox}>
           {cloneElement(children, {
-            'aria-autocomplete': 'both',
             onBlur: this.handleBlur,
             onChange: this.handleChange,
             onFocus: this.handleFocus,
             onKeyDown: this.handleKeyDown,
             ref: 'textBox',
-            role: 'combobox',
             value: value
           })}
           {isMenuVisible && resultList.length > 0 &&
             <div className={classNames.resultList}
               onMouseDown={this.handleMouseDown}>
-              {renderBeforeResultList && renderBeforeResultList.call(this, resultList)}
+              {renderBeforeResultList && renderBeforeResultList.call(this)}
               {resultList.map((resultItem, index) => {
                 return (
                   <div className={classnames(classNames.resultItem, index === highlightedIndex && classNames.isHighlighted)}
@@ -309,7 +311,7 @@ export default class AutoComplete extends Component {
                   </div>
                 );
               })}
-              {renderAfterResultList && renderAfterResultList.call(this, resultList)}
+              {renderAfterResultList && renderAfterResultList.call(this)}
             </div>}
         </div>
         {renderAfterTextBox &&
