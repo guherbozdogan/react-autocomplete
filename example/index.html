@@ -4,16 +4,36 @@
     <title>autocomplete</title>
     <meta charset="utf-8">
     <style>
+      .textBox {
+        display: inline-block;
+        position: relative;
+      }
+      .isLoading .textBox input {
+        background-color: lightgray;
+      }
+      .resultList {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        left: 0;
+      }
+      .resultItem a {
+        display: block;
+      }
+      .resultItem a:active,
+      .resultItem a:hover {
+        background-color: lightgray;
+      }
       .isHighlighted {
         background-color: yellow;
       }
-      .isLoading input {
-        background-color: gray;
+      .button {
+        display: inline-block;
       }
     </style>
   </head>
   <body>
-    <div class="autocomplete"></div>
+    <div class="app"></div>
     <script src="/example/vendor.js"></script>
     <script src="/example/bundle.js"></script>
   </body>

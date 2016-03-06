@@ -1,309 +1,320 @@
-(function() {
+import classnames from 'classnames';
+import React, {cloneElement, Component, PropTypes} from 'react';
 
-  const ENTER_KEYCODE = 13;
-  const ESCAPE_KEYCODE = 27;
-  const UP_ARROW_KEYCODE = 38;
-  const DOWN_ARROW_KEYCODE = 40;
+// Index that indicates that none of the autocomplete results is
+// currently highlighted.
+const SENTINEL = -1;
 
-  const HIGHLIGHTED_ITEM_CLASS = 'autocomplete__menu-item--highlighted';
+export default class Autocomplete extends Component {
+  static propTypes = {
+    children: PropTypes.node,
+    classNames: PropTypes.objectOf(PropTypes.string),
+    debounceDuration: PropTypes.number,
+    getResultItemValue: PropTypes.func.isRequired,
+    getResultList: PropTypes.func.isRequired,
+    onEnterKeyDown: PropTypes.func,
+    onResultItemClick: PropTypes.func,
+    renderAfterResultList: PropTypes.func,
+    renderAfterTextBox: PropTypes.func,
+    renderBeforeResultList: PropTypes.func,
+    renderBeforeTextBox: PropTypes.func,
+    renderResultItem: PropTypes.func.isRequired,
+    shouldCacheResultList: PropTypes.bool
+  };
 
-  const SENTINEL = -1;
+  static defaultProps = {
+    children: <input type="text" />,
+    classNames: {
+      isHighlighted: 'isHighlighted',
+      isLoading: 'isLoading',
+      resultItem: 'resultItem',
+      resultList: 'resultList',
+      root: 'root',
+      textBox: 'textBox'
+    },
+    debounceDuration: 250,
+    shouldCacheResultList: true
+  };
 
-  function noop() {}
+  static initialState = {
+    highlightedIndex: SENTINEL,
+    initialValue: '',
+    isLoading: false,
+    isMenuVisible: false,
+    resultList: [],
+    value: ''
+  };
 
-  function autoComplete(inputElement, menuContainerElement, options = {}) {
+  state = Autocomplete.initialState;
 
-    // Callbacks.
-    options.filterItems = options.filterItems || function(items) {
-      return items;
-    };
-    options.getItems = options.getItems || function() {
-      return new Promise(function(callback) {
-        callback([]);
-      });
-    };
-    options.renderMenuElement = options.renderMenuElement || function(matchedItem) {
-      const menuElement = document.createElement('div');
-      menuElement.innerHTML = matchedItem.value;
-      return menuElement;
-    };
-    options.renderMenuElements = options.renderMenuElements || function(menuElements, menuContainerElement) {
-      menuElements.forEach(function(menuElement) {
-        menuContainerElement.appendChild(menuElement);
-      });
-    };
-    options.highlightMenuElement = options.highlightMenuElement || function(menuElement) {
-      menuElement.classList.add(HIGHLIGHTED_ITEM_CLASS);
-    };
-    options.unhighlightMenuElement = options.unhighlightMenuElement || function(menuElement) {
-      menuElement.classList.remove(HIGHLIGHTED_ITEM_CLASS);
-    };
-    options.showMenu = options.showMenu || function(menuContainerElement) {
-      menuContainerElement.style.display = 'block';
-    };
-    options.hideMenu = options.hideMenu || function(menuContainerElement) {
-      menuContainerElement.style.display = 'none';
-    };
-    options.selectMenuElement = options.selectMenuElement || noop;
-    options.enterKeyDown = options.enterKeyDown || noop;
-
-    // Cache for matched items; maps each `value` to the array of matched items.
-    const matchedItemsCache = {};
-
-    // Store the initial, user-input value of the text box.
-    let initialValue = '';
-
-    // Stores items that match `initialValue`.
-    let matchedItems = [];
-
-    // Stores the rendered DOM menu elements. Same size as the `matchedItems`
-    // array; one-to-one correspondence with `matchedItems`.
-    let menuElements = [];
-
-    // The index of the highlighted DOM element in `menuElements`.
-    let highlightedIndex = SENTINEL;
-
-    function decrementHighlightedIndex() {
-      switch (highlightedIndex) {
-        case SENTINEL:
-          // Wrap around to the last menu element.
-          highlightedIndex = menuElements.length - 1;
-          break;
-        case 0:
-          // Revert to the original user-input value.
-          highlightedIndex = SENTINEL;
-          break;
-        default:
-          // Decrement.
-          highlightedIndex--;
-      }
+  // Returns the value of `state.highlightedIndex` decremented by 1.
+  // If necessary, wraps around to the last item, or reverts to `SENTINEL`
+  // (ie. no item highlighted).
+  decrementHighlightedIndex = () => {
+    const {
+      highlightedIndex,
+      resultList
+    } = this.state;
+    switch (highlightedIndex) {
+      case SENTINEL:
+        return resultList.length - 1;
+      case 0:
+        return SENTINEL;
+      default:
+        return highlightedIndex - 1;
     }
+  };
 
-    function incrementHighlightedIndex() {
-      if (highlightedIndex < menuElements.length - 1) {
-        // Increment.
-        highlightedIndex++;
-      } else {
-        // Revert to the original user-input value.
-        highlightedIndex = SENTINEL;
-      }
+  // Returns the value of `state.highlightedIndex` incremented by 1.
+  // If necessary, reverts to `SENTINEL` (ie. no item highlighted).
+  incrementHighlightedIndex = () => {
+    const {
+      highlightedIndex,
+      resultList
+    } = this.state;
+    if (highlightedIndex === resultList.length - 1) {
+      return SENTINEL;
     }
+    return highlightedIndex + 1;
+  };
 
-    function unhighlightMenuElement(index) {
-      if (index !== SENTINEL && menuElements[index]) {
-        // Unhighlight the menu element at `index`.
-        options.unhighlightMenuElement(matchedItems[index], menuElements[index]);
-      }
-    }
+  // Set the current highlighted item to the item at the given
+  // `highlightedIndex`. Set the text box's value to that of the new
+  // highlighted item.
+  setHighlightedItem = (highlightedIndex) => {
+    const {getResultItemValue} = this.props;
+    const {
+      initialValue,
+      resultList
+    } = this.state;
+    const isAnyItemHighlighted = highlightedIndex !== SENTINEL;
+    this.setState({
+      highlightedIndex,
+      value: isAnyItemHighlighted
+        ? getResultItemValue.call(this, resultList[highlightedIndex])
+        : initialValue
+    });
+    window.requestAnimationFrame(isAnyItemHighlighted
+      ? this.selectTextBoxValue
+      : this.moveTextBoxCaretToEnd);
+  };
 
-    function highlightMenuElement(index) {
-      if (index !== SENTINEL && menuElements[index]) {
-        // Set the text box value to that of the highlight item.
-        const matchedItem = matchedItems[index];
-        inputElement.value = matchedItem.value;
-        // Highlight the menu element at `index`.
-        options.highlightMenuElement(matchedItem, menuElements[index]);
-        // Move the input caret to the end of the text box in the next frame.
-        window.requestAnimationFrame(highlightTextBoxValue);
-      } else {
-        // Revert to the original user-input value.
-        inputElement.value = initialValue;
-        // Move the input caret to the end of the text box in the next frame.
-        window.requestAnimationFrame(moveCaretToEnd);
-      }
-    }
+  // Select all the text in the text box.
+  selectTextBoxValue = () => {
+    const {value} = this.state;
+    this.refs.textBox.setSelectionRange(0, value.length);
+  };
 
-    function highlightTextBoxValue() {
-      const length = inputElement.value.length;
-      inputElement.setSelectionRange(0, length);
-    }
+  // Move the caret in the text box to the end of the text box.
+  moveTextBoxCaretToEnd = () => {
+    const {value} = this.state;
+    const length = value.length;
+    this.refs.textBox.setSelectionRange(length, length);
+  };
 
-    function moveCaretToEnd() {
-      const length = inputElement.value.length;
-      inputElement.setSelectionRange(length, length);
-    }
+  // Hide the result menu.
+  hideResultMenu = () => {
+    this.setState({
+      isMenuVisible: false
+    });
+  };
 
-    function selectHighlightedMenuElement() {
-      options.selectMenuElement(matchedItems[highlightedIndex], menuElements[highlightedIndex]);
-    }
+  // Show the result menu.
+  showResultMenu = () => {
+    this.setState({
+      isMenuVisible: true
+    });
+  };
 
-    function renderMenuElements() {
-      menuElements = matchedItems.map(function(matchedItem) {
-        return options.renderMenuElement(matchedItem);
-      });
-      // Append all the `menuElements` to `menuContainerElement`.
-      menuContainerElement.innerHTML = '';
-      options.renderMenuElements(menuElements, menuContainerElement);
-      showMenu();
-      // Unhighlight the highlighted menu element.
-      unhighlightMenuElement(highlightedIndex);
-      highlightedIndex = SENTINEL;
-    }
+  // Set `state.resultList` to the given `resultList`, set to not loading,
+  // and show the results.
+  receiveResultList = (resultList) => {
+    this.setState({
+      isLoading: false,
+      resultList
+    });
+    this.showResultMenu();
+  };
 
-    let timeout;
-    function updateMenu(value) {
-      // Debounce.
+  // Update `state.resultList` based on the given `value`.
+  // - Caches results for `state.resultList` in a `cache`; returns
+  //   immediately if the results for `value` is already in `cache`.
+  // - "Rate-limited" to prevent unnecessary calls to `getResultList`.
+  //   Only calls `getResultList` if `updateResultList` has not been
+  //   called for at least `debounceDuration`.
+  updateResultList = (() => {
+    let timeout = null;
+    let cache = {};
+    return (value) => {
+      const {
+        debounceDuration,
+        getResultList,
+        shouldCacheResultList
+      } = this.props;
       clearTimeout(timeout);
-      timeout = setTimeout(function() {
+      const resultList = shouldCacheResultList && cache[value];
+      if (resultList) {
+        this.receiveResultList(resultList);
+        return;
+      }
+      timeout = setTimeout(() => {
         timeout = null;
-        if (matchedItemsCache[value]) {
-          matchedItems = matchedItemsCache[value];
-          renderMenuElements();
-          return;
-        }
-        options.getItems(value).then(function(items) {
-          // Filter the returned `items`.
-          matchedItems = options.filterItems(items);
-          // Add the current set of `matchedItems` to the cache.
-          matchedItemsCache[value] = matchedItems;
-          renderMenuElements();
+        this.setState({
+          isLoading: true
         });
-      }, 200);
-    }
-
-    let isVisible = false;
-    function hideMenu() {
-      if (isVisible) {
-        options.hideMenu(menuContainerElement);
-        isVisible = false;
-      }
-    }
-    function showMenu() {
-      if (!isVisible && matchedItems.length > 0) {
-        options.showMenu(menuContainerElement);
-        isVisible = true;
-      }
-    }
-
-    function reset() {
-      matchedItems = [];
-      // Explicitly `null` out references to each `menuElement`.
-      menuElements.forEach(function(menuElement, index) {
-        menuElements[index] = null;
-      });
-      menuElements = [];
-      menuContainerElement.innerHTML = '';
-      highlightedIndex = SENTINEL;
-      hideMenu();
-    }
-
-    const keydownHandlers = {
-      [ENTER_KEYCODE]: function() {
-        if (highlightedIndex === SENTINEL) {
-          options.enterKeyDown(inputElement.value);
-        } else {
-          selectHighlightedMenuElement();
-        }
-      },
-      [ESCAPE_KEYCODE]: function() {
-        inputElement.blur();
-      },
-      [UP_ARROW_KEYCODE]: function() {
-        unhighlightMenuElement(highlightedIndex);
-        decrementHighlightedIndex();
-        highlightMenuElement(highlightedIndex);
-      },
-      [DOWN_ARROW_KEYCODE]: function() {
-        unhighlightMenuElement(highlightedIndex);
-        incrementHighlightedIndex();
-        highlightMenuElement(highlightedIndex);
-      }
+        getResultList.call(this, value).then((resultList) => {
+          if (shouldCacheResultList) {
+            cache[value] = resultList;
+          }
+          this.receiveResultList(resultList);
+        });
+      }, debounceDuration);
     };
+  })();
 
-    let valueOnKeyDown = '';
+  // Reset to the initial state ie. empty text box with no results.
+  reset = () => {
+    this.setState(Autocomplete.initialState);
+  };
 
-    function inputElementOnKeyDown(event) {
-      // Record the value of the text box on `keydown`.
-      valueOnKeyDown = inputElement.value.trim();
-      // Reset if the text box is empty.
-      if (valueOnKeyDown === '') {
-        reset();
-        return;
-      }
-      // Run the handler corresponding to the key that was pressed.
-      const handler = keydownHandlers[event.keyCode];
-      if (handler) {
-        handler();
-      }
+  keyDownHandlers = {
+    ArrowDown: () => {
+      this.setHighlightedItem(this.incrementHighlightedIndex());
+    },
+    ArrowUp: () => {
+      this.setHighlightedItem(this.decrementHighlightedIndex());
+    },
+    Enter: () => {
+      this.handleEnterKeyDown();
+    },
+    Escape: () => {
+      this.hideResultMenu();
+      this.refs.textBox.blur();
     }
-    inputElement.addEventListener('keydown', inputElementOnKeyDown);
+  };
 
-    function inputElementOnKeyUp(event) {
-      const value = inputElement.value.trim();
-      // Reset if the textbox is currently empty
-      if (value === '') {
-        reset();
-        return;
-      }
-      // Exit if:
-      // 1. We had pressed the up, down, or enter keys.
-      // 2. The text box value did not change between the `keydown` and
-      //    `keyup` events.
-      if (keydownHandlers[event.keyCode] || valueOnKeyDown === value) {
-        return;
-      }
-      // Save the initial, user-input value of the text box, before updating
-      // the menu.
+  handleKeyDown = (event) => {
+    const {
+      highlightedIndex,
+      value
+    } = this.state;
+    const keyDownHandler = this.keyDownHandlers[event.key];
+    if (keyDownHandler) {
+      // Save the initial user input value.
       if (highlightedIndex === SENTINEL) {
-        initialValue = value;
+        this.setState({
+          initialValue: value
+        });
       }
-      updateMenu(value);
+      keyDownHandler(event);
     }
-    inputElement.addEventListener('keyup', inputElementOnKeyUp);
+  };
 
-    // Show and hide the menu respectively on `focus` and on `blur`.
-    inputElement.addEventListener('focus', showMenu);
-    inputElement.addEventListener('blur', hideMenu);
-
-    // Helper to find the index of the element in `menuElements` that
-    // was clicked. Recursive; walks up the DOM tree towards
-    // `menuContainerElement`.
-    function findClickedMenuElementIndex(element) {
-      if (!element || element === menuContainerElement) {
-        return -1;
-      }
-      const index = menuElements.indexOf(element);
-      if (index !== -1) {
-        return index;
-      }
-      return findClickedMenuElementIndex(element.parentNode);
+  // Note that `handleChange` is only called if the text box value has actually
+  // changed. It is not called when we hit the up/down arrows.
+  handleChange = (event) => {
+    const value = event.target.value;
+    if (value.trim() === '') {
+      this.reset();
+      return;
     }
-    function menuContainerElementOnClick(event) {
-      const clickedMenuElementIndex = findClickedMenuElementIndex(event.target);
-      if (clickedMenuElementIndex !== -1) {
-        // Highlight the clicked menu element.
-        unhighlightMenuElement(highlightedIndex);
-        highlightedIndex = clickedMenuElementIndex;
-        highlightMenuElement(highlightedIndex);
-        // Select the clicked menu element.
-        selectHighlightedMenuElement();
-      }
-    }
-    menuContainerElement.addEventListener('click', menuContainerElementOnClick);
+    this.setState({
+      highlightedIndex: SENTINEL,
+      initialValue: value,
+      value
+    });
+    this.updateResultList(value);
+  };
 
-    // Prevent the text box from losing focus when we click on a menu item.
-    function menuContainerElementOnMouseDown(event) {
-      event.preventDefault();
-    }
-    menuContainerElement.addEventListener('mousedown', menuContainerElementOnMouseDown);
+  handleBlur = () => {
+    this.hideResultMenu();
+  };
 
-    // Return a function for removing all the event listeners we had bound.
-    return function() {
-      reset();
-      inputElement.removeEventListener('keydown', inputElementOnKeyDown);
-      inputElement.removeEventListener('keyup', inputElementOnKeyUp);
-      inputElement.removeEventListener('focus', showMenu);
-      inputElement.removeEventListener('blur', hideMenu);
-      menuContainerElement.removeEventListener('click', menuContainerElementOnClick);
-      menuContainerElement.removeEventListener('mousedown', menuContainerElementOnMouseDown);
+  handleEnterKeyDown = () => {
+    const {onEnterKeyDown} = this.props;
+    const {
+      highlightedIndex,
+      resultList,
+      value
+    } = this.state;
+    onEnterKeyDown && onEnterKeyDown.call(this, value, resultList[highlightedIndex]);
+  };
+
+  handleFocus = () => {
+    this.showResultMenu();
+  };
+
+  handleResultItemClick = (index) => {
+    const {resultList} = this.state;
+    const {
+      getResultItemValue,
+      onResultItemClick
+    } = this.props;
+    const result = resultList[index];
+    onResultItemClick && onResultItemClick(getResultItemValue.call(this, result), result);
+    this.setHighlightedItem(index);
+  };
+
+  // Prevent the text box from losing focus when we click outside the text
+  // box (eg. click on the result menu).
+  handleMouseDown = (event) => {
+    event.preventDefault();
+  };
+
+  render() {
+    const {
+      children,
+      classNames,
+      renderAfterResultList,
+      renderAfterTextBox,
+      renderBeforeResultList,
+      renderBeforeTextBox,
+      renderResultItem
+    } = this.props;
+    const {
+      highlightedIndex,
+      isLoading,
+      isMenuVisible,
+      resultList,
+      value
+    } = this.state;
+    const onMouseDownProp = {
+      onMouseDown: this.handleMouseDown
     };
-
+    return (
+      <div className={classnames(classNames.root, isLoading && classNames.isLoading)}>
+        {renderBeforeTextBox &&
+          cloneElement(renderBeforeTextBox.call(this), onMouseDownProp)}
+        <div className={classNames.textBox}>
+          {cloneElement(children, {
+            'aria-autocomplete': 'both',
+            onBlur: this.handleBlur,
+            onChange: this.handleChange,
+            onFocus: this.handleFocus,
+            onKeyDown: this.handleKeyDown,
+            ref: 'textBox',
+            role: 'combobox',
+            value: value
+          })}
+          {isMenuVisible && resultList.length > 0 &&
+            <div className={classNames.resultList}
+              onMouseDown={this.handleMouseDown}>
+              {renderBeforeResultList && renderBeforeResultList.call(this, resultList)}
+              {resultList.map((resultItem, index) => {
+                return (
+                  <div className={classnames(classNames.resultItem, index === highlightedIndex && classNames.isHighlighted)}
+                    key={index}
+                    onClick={this.handleResultItemClick.bind(this, index)}>
+                    {renderResultItem.call(this, resultItem)}
+                  </div>
+                );
+              })}
+              {renderAfterResultList && renderAfterResultList.call(this, resultList)}
+            </div>}
+        </div>
+        {renderAfterTextBox &&
+          cloneElement(renderAfterTextBox.call(this), onMouseDownProp)}
+      </div>
+    );
   }
-
-  if (typeof module === 'object') {
-    module.exports = autoComplete;
-  } else {
-    window.autoComplete = autoComplete;
-  }
-
-})();
+}
