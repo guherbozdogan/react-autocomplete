@@ -1,12 +1,16 @@
 {
+  "ecmaFeatures": {
+    "classes": true,
+    "jsx": true
+  },
   "env": {
     "browser": true,
     "node": true
   },
-  "globals": {
-    "Promise": true
-  },
   "parser": "babel-eslint",
+  "plugins": [
+    "react"
+  ],
   "rules": {
     "block-scoped-var": 2,
     "camelcase": 2,
@@ -67,6 +71,9 @@
       2,
       "prefer-double"
     ],
+    "react/jsx-uses-vars": 2,
+    "react/jsx-uses-react": 2,
+    "react/react-in-jsx-scope": 2,
     "semi": 2,
     "strict": [
       2,

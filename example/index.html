@@ -4,76 +4,17 @@
     <title>autocomplete</title>
     <meta charset="utf-8">
     <style>
-      .autocomplete {
-        display: inline-block;
-        position: relative;
+      .highlighted {
+        background-color: yellow;
       }
-      .autocomplete__text-box {
-        width: 200px;
-      }
-      .autocomplete__menu {
-        position: absolute;
-        top: 100%;
-        right: 0;
-        left: 0;
+      .isLoading input {
+        background-color: gray;
       }
     </style>
   </head>
   <body>
-    <div class="autocomplete">
-      <input type="text" class="autocomplete__text-box" tabindex="1" />
-      <div class="autocomplete__menu"></div>
-    </div>
-    <script src="https://npmcdn.com/fetch-jsonp@1.0.0"></script>
-    <script src="/lib/index.js"></script>
-    <script>
-      var inputElement = document.querySelector('.autocomplete__text-box');
-      var menuContainerElement = document.querySelector('.autocomplete__menu');
-      window.autoComplete(inputElement, menuContainerElement, {
-        getItems: function(value) {
-          inputElement.style.backgroundColor = 'yellow';
-          return window.fetchJsonp('http://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=' + value)
-            .then(function(response) {
-              inputElement.style.backgroundColor = 'transparent';
-              return response.json();
-            }).then(function(json) {
-              var values = json[1];
-              var descriptions = json[2];
-              var links = json[3];
-              return values.map(function(value, index) {
-                return {
-                  value: value,
-                  keys: [
-                    value,
-                    descriptions[index]
-                  ],
-                  link: links[index]
-                }
-              });
-            })
-        },
-        renderMenuElement: function(item) {
-          const menuItemElement = document.createElement('div');
-          menuItemElement.innerHTML = item.value;
-          return menuItemElement;
-        },
-        highlightMenuElement: function(item, menuElement) {
-          menuElement.style.color = 'white';
-          menuElement.style.backgroundColor = 'blue';
-        },
-        unhighlightMenuElement: function(item, menuElement) {
-          menuElement.style.color = 'black';
-          menuElement.style.backgroundColor = 'transparent';
-        },
-        selectMenuElement: function(item, matchedElement) {
-          matchedElement.style.color = 'white';
-          matchedElement.style.backgroundColor = 'green';
-          // window.location.href = item.link;
-        },
-        enterKeyDown: function(value) {
-          // window.location.href = 'http://en.wikipedia.org/wiki/Special:Search?search=' + value;
-        }
-      });
-    </script>
+    <div class="autocomplete"></div>
+    <script src="/example/vendor.js"></script>
+    <script src="/example/bundle.js"></script>
   </body>
 </html>
