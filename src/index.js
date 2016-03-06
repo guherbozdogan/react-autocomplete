@@ -5,7 +5,7 @@ import React, {cloneElement, Component, PropTypes} from 'react';
 // currently highlighted.
 const SENTINEL = -1;
 
-export default class Autocomplete extends Component {
+export default class AutoComplete extends Component {
   static propTypes = {
     children: PropTypes.node,
     classNames: PropTypes.objectOf(PropTypes.string),
@@ -45,7 +45,7 @@ export default class Autocomplete extends Component {
     value: ''
   };
 
-  state = Autocomplete.initialState;
+  state = AutoComplete.initialState;
 
   // Returns the value of `state.highlightedIndex` decremented by 1.
   // If necessary, wraps around to the last item, or reverts to `SENTINEL`
@@ -174,7 +174,7 @@ export default class Autocomplete extends Component {
 
   // Reset to the initial state ie. empty text box with no results.
   reset = () => {
-    this.setState(Autocomplete.initialState);
+    this.setState(AutoComplete.initialState);
   };
 
   keyDownHandlers = {

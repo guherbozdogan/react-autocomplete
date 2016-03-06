@@ -1,7 +1,7 @@
 import fetchJsonp from 'fetch-jsonp';
 import React from 'react';
 import {render} from 'react-dom';
-import Autocomplete from '../src';
+import AutoComplete from '../src';
 
 const classNames = {
   isHighlighted: 'isHighlighted',
@@ -56,7 +56,7 @@ function renderResultItem(item) {
 function noop() {}
 
 render((
-  <Autocomplete
+  <AutoComplete
     classNames={classNames}
     debounceDuration={250}
     getResultItemValue={getResultItemValue}
@@ -70,5 +70,5 @@ render((
     renderResultItem={renderResultItem}
     shouldCacheResultList>
     <input type="text" placeholder="Search Wikipedia&hellip;" />
-  </Autocomplete>
+  </AutoComplete>
 ), document.querySelector('.app'));
