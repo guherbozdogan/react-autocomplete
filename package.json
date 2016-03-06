@@ -1,5 +1,5 @@
 {
-  "name": "autocomplete",
+  "name": "@yuanqing/autocomplete",
   "version": "0.0.0",
   "description": "React autocomplete component with a friendly API.",
   "author": "Lim Yuan Qing",
