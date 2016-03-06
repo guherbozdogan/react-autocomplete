@@ -13,7 +13,7 @@ const classNames = {
 };
 
 function getResultList(value) {
-  return fetchJsonp('http://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=' + value)
+  return fetchJsonp(`http://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=${value}`)
     .then((response) => {
       return response.json();
     }).then((json) => {
@@ -27,13 +27,13 @@ function getResultList(value) {
     });
 }
 
-function getResultItemValue(item) {
-  return item.value;
+function getResultItemValue(resultItem) {
+  return resultItem.value;
 }
 
-function onEnterKeyDown(value, item) {
-  if (value || item) {
-    window.location.href = item ? item.link : `http://en.wikipedia.org/wiki/Special:Search?search=${value}`;
+function onEnterKeyDown(value, resultItem) {
+  if (value || resultItem) {
+    window.location.href = resultItem ? resultItem.link : `http://en.wikipedia.org/wiki/Special:Search?search=${value}`;
   }
 }
 
@@ -45,15 +45,13 @@ function renderAfterTextBox() {
   );
 }
 
-function renderResultItem(item) {
+function renderResultItem(resultItem) {
   const {
     link,
     value
-  } = item;
+  } = resultItem;
   return <a href={link}>{value}</a>;
 }
-
-function noop() {}
 
 render((
   <AutoComplete
@@ -62,13 +60,9 @@ render((
     getResultItemValue={getResultItemValue}
     getResultList={getResultList}
     onEnterKeyDown={onEnterKeyDown}
-    onResultItemClick={noop}
-    // renderAfterResultList={}
     renderAfterTextBox={renderAfterTextBox}
-    // renderBeforeResultList={}
-    // renderBeforeTextBox={}
     renderResultItem={renderResultItem}
     shouldCacheResultList>
     <input type="text" placeholder="Search Wikipedia&hellip;" />
   </AutoComplete>
-), document.querySelector('.app'));
+), document.querySelector('.AutoComplete'));
