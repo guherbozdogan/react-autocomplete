@@ -1,7 +1,7 @@
 {
   "name": "@yuanqing/autocomplete",
   "version": "0.0.0",
-  "description": "React autocomplete component with a friendly API.",
+  "description": "React autocomplete component with an opinionated UX.",
   "author": "Lim Yuan Qing",
   "license": "MIT",
   "main": "lib/index.js",
