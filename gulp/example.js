@@ -32,9 +32,8 @@ gulp.task('example:vendor', () => {
 });
 
 function bundleApp(b) {
-  // console.log('x');
   return b.bundle()
-    .pipe(source('bundle.js'))
+    .pipe(source('app.js'))
     .pipe(buffer())
     .pipe(gulp.dest('example'));
 };
