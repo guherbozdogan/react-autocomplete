@@ -6,18 +6,20 @@
 
 - **Allows retrieving of autocomplete results asynchronously from an API**
 - **Responds to keyboard and mouse inputs the way you&rsquo;d expect**
-  - <kbd>&uarr;</kbd> or <kbd>&darr;</kbd> &mdash; Highlight the previous or next autocomplete result, if any, and update the text box value with the value of the highlighted item
-  - <kbd>Esc</kbd> &mdash; Unfocus the text box, and hide the autocomplete results, if any
-  - <kbd>Enter</kbd> &mdash; Execute the <kbd>Enter</kbd> key down callback (namely, [`onEnterKeyDown`](#onenterkeydown))
-  - *If the text box value changes* &mdash; Executes a callback (namely, [`getResultList`](#getresultlist)) to retrieve results for the text box value, and updates the autocomplete results. Execution of this callback is [appropriately debounced](#debounceduration) to avoid redundant API calls
-  - *Clicking on an autocomplete result* &mdash; Sets the highlighted item to the item that was clicked, and executes the `onClick` callback (namely, [`onResultItemClick`](#onresultitemclick))
+  - <kbd>&uarr;</kbd> or <kbd>&darr;</kbd> &mdash; Highlight the previous or next autocomplete result, if any, and update the text box value with the value of the highlighted item.
+  - <kbd>Esc</kbd> &mdash; Unfocus the text box, and hide the autocomplete results, if any.
+  - <kbd>Enter</kbd> &mdash; Execute the <kbd>Enter</kbd> key down callback (namely, [`onEnterKeyDown`](#onenterkeydown)).
+  - *If the text box value changes* &mdash; Executes the callback to retrieve results for the text box value (namely, [`getResultList`](#getresultlist)), and updates the autocomplete results. Execution of this callback is [appropriately debounced](#debounceduration) to avoid unnecessary API calls.
+  - *Clicking on an autocomplete result* &mdash; Sets the highlighted item to the item that was clicked, and executes the `onClick` callback (namely, [`onResultItemClick`](#onresultitemclick)).
 - **Flexible and extensible**
-  - Exposes [class name hooks](#classnames) to allow styling of respective parts of the component
-  - Exposes [assorted render callbacks](#renderbeforeresultlistrenderafterresultlistrenderbeforetextboxrenderaftertextbox) to insert elements at specific locations in the component
+  - Exposes [class name hooks](#classnames) to allow styling of respective parts of the component.
+  - Exposes [assorted render callbacks](#renderbeforeresultlistrenderafterresultlistrenderbeforetextboxrenderaftertextbox) to insert elements at specific locations in the component.
+- **Performant**
+  - Caches autocomplete results by default
 
 ## Usage
 
-The following is a barebones usage example with just the three required `props`, and assuming a `/search` endpoint.
+The following is a barebones usage example with just the three required `props`, assuming a `/search` endpoint to obtain autocomplete results.
 
 ```jsx
 import AutoComplete from '@yuanqing/autocomplete';
@@ -41,7 +43,9 @@ render((
         value
       } = item;
       return <a href={link}>{value}</a>;
-    }} />
+    }}>
+    <input aria-autocomplete="both" role="combobox" type="text" />
+  </AutoComplete>
 ), document.querySelector('.autoComplete'));
 ```
 
@@ -152,6 +156,12 @@ Function that is called when we click on a result item.
 Functions that return a `ReactElement` to be inserted at respective locations in the component.
 
 - Default: `undefined`
+
+#### `shouldCacheResultList`
+
+Whether results should be cached. If `true`, use results from the cache instead of hitting the API endpoint. (The cache is an object that maps each value to an array of result items.)
+
+- Default: `true`
 
 ## Installation
 
