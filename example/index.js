@@ -13,7 +13,7 @@ const classNames = {
 };
 
 function getResultList(value) {
-  return fetchJsonp(`http://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=${value}`)
+  return fetchJsonp(`https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=${value}`)
     .then((response) => {
       return response.json();
     }).then((json) => {
@@ -33,7 +33,7 @@ function getResultItemValue(resultItem) {
 
 function onEnterKeyDown(value, resultItem) {
   if (value || resultItem) {
-    window.location.href = resultItem ? resultItem.link : `http://en.wikipedia.org/wiki/Special:Search?search=${value}`;
+    window.location.href = resultItem ? resultItem.link : `https://en.wikipedia.org/wiki/Special:Search?search=${value}`;
   }
 }
 
