@@ -4,15 +4,16 @@
 
 ## Features
 
+- **Allows retrieving of autocomplete results asynchronously from an API**
 - **Responds to keyboard and mouse inputs the way you&rsquo;d expect**
   - <kbd>&uarr;</kbd> or <kbd>&darr;</kbd> &mdash; Highlight the previous or next autocomplete result, if any, and update the text box value with the value of the highlighted item
   - <kbd>Esc</kbd> &mdash; Unfocus the text box, and hide the autocomplete results, if any
   - <kbd>Enter</kbd> &mdash; Execute the <kbd>Enter</kbd> key down callback (namely, [`onEnterKeyDown`](#onenterkeydown))
-  - *If the text box value changes* &mdash; Executes a callback (namely, [`getResultList`](#getresultlist)) to retrieve results for the text box value, and updates the autocomplete results. Execution of this callback is [appropriately debounced](#debounceduration) to prevent redundant API calls
+  - *If the text box value changes* &mdash; Executes a callback (namely, [`getResultList`](#getresultlist)) to retrieve results for the text box value, and updates the autocomplete results. Execution of this callback is [appropriately debounced](#debounceduration) to avoid redundant API calls
   - *Clicking on an autocomplete result* &mdash; Sets the highlighted item to the item that was clicked, and executes the `onClick` callback (namely, [`onResultItemClick`](#onresultitemclick))
 - **Flexible and extensible**
   - Exposes [class name hooks](#classnames) to allow styling of respective parts of the component
-  - Exposes [assorted render callbacks](renderbeforeresultlistrenderafterresultlistrenderbeforetextboxrenderaftertextbox) to insert elements at specific locations in the component
+  - Exposes [assorted render callbacks](#renderbeforeresultlistrenderafterresultlistrenderbeforetextboxrenderaftertextbox) to insert elements at specific locations in the component
 
 ## Usage
 
