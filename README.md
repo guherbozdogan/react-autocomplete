@@ -2,6 +2,18 @@
 
 > [React](https://facebook.github.io/react/) autocomplete component with an opinionated UX.
 
+## Features
+
+- **Responds to keyboard and mouse inputs the way you&rsquo;d expect**
+  - <kbd>&uarr;</kbd> or <kbd>&darr;</kbd> &mdash; Highlight the previous or next autocomplete result, if any, and update the text box value with the value of the highlighted item
+  - <kbd>Esc</kbd> &mdash; Unfocus the text box, and hide the autocomplete results, if any
+  - <kbd>Enter</kbd> &mdash; Execute the <kbd>Enter</kbd> key down callback (namely, [`onEnterKeyDown`](#onenterkeydown))
+  - *If the text box value changes* &mdash; Executes a callback (namely, [`getResultList`](#getresultlist)) to retrieve results for the text box value, and updates the autocomplete results. Execution of this callback is [appropriately debounced](#debounceduration) to prevent redundant API calls
+  - *Clicking on an autocomplete result* &mdash; Sets the highlighted item to the item that was clicked, and executes the `onClick` callback (namely, [`onResultItemClick`](#onresultitemclick))
+- **Flexible and extensible**
+  - Exposes [class name hooks](#classnames) to allow styling of respective parts of the component
+  - Exposes [assorted render callbacks](renderbeforeresultlistrenderafterresultlistrenderbeforetextboxrenderaftertextbox) to insert elements at specific locations in the component
+
 ## Usage
 
 The following is a barebones usage example with just the three required `props`, and assuming a `/search` endpoint.
@@ -39,7 +51,7 @@ The [example](example/) in the repo is a working autocomplete search box that re
 To run it, do:
 
 ```
-$ git clone https://github.com/yuanqing/autocomplete
+$ git clone
 $ npm install
 $ npm install --global gulp
 $ gulp example --open
@@ -59,7 +71,7 @@ import AutoComplete from '@yuanqing/autocomplete';
 
 - Signature: `(resultItem)`
 
-Function that returns the value from `resultItem` that is to be assigned to the autocomplete text box when the said `resultItem` is highlighted.
+Function that yields the value from `resultItem` that is to be assigned to the text box when said `resultItem` is highlighted.
 
 #### `getResultList`
 
@@ -122,7 +134,7 @@ An object literal of classes to assign to the various elements that compose the 
 
 #### `onEnterKeyDown`
 
-Function that is called when we press the `<Enter>` key while the text box is focused.
+Function that is called when we press the <kbd>Enter</kbd> key while the text box is focused.
 
 - Default: `undefined`
 - Signature: `(value, highlightedResultItem)`
