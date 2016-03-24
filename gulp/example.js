@@ -31,8 +31,12 @@ gulp.task('example:vendor', () => {
     .pipe(gulp.dest('example'));
 });
 
-function bundleApp(b) {
+function bundle(b) {
   return b.bundle()
+    .on('error', ({message, codeFrame}) => {
+      gutil.log(gutil.colors.red(message));
+      console.log(codeFrame);
+    })
     .pipe(source('app.js'))
     .pipe(buffer())
     .pipe(gulp.dest('example'));
@@ -49,9 +53,9 @@ gulp.task('example:app', () => {
   b.on('error', gutil.log);
   b.on('log', gutil.log);
   b.on('update', () => {
-    bundleApp(b);
+    bundle(b);
   });
-  bundleApp(b);
+  bundle(b);
 });
 
 gulp.task('example:open', () => {
