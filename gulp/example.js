@@ -71,7 +71,7 @@ gulp.task('example:open', () => {
     const url = 'http://localhost:4242/example';
     gutil.log(gutil.colors.green('Opening', url));
     opn(url, {
-      app: 'google chrome',
+      app: 'google-chrome',
       wait: false
     });
   }
