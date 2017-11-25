@@ -1,6 +1,5 @@
 .DS_Store
 *.log
 coverage/
-lib/
 node_modules/
 sandbox/
