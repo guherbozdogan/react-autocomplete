@@ -1,5 +1,5 @@
 {
-  "name": "@yuanqing/autocomplete",
+  "name": "react-autocomplete",
   "version": "0.0.1",
   "description": "React autocomplete component with an opinionated UX.",
   "author": "Lim Yuan Qing",
@@ -7,7 +7,7 @@
   "main": "lib/index.js",
   "repository": {
     "type": "git",
-    "url": "git://github.com/yuanqing/autocomplete.git"
+    "url": "git://github.com/guherbozdogan/react-autocomplete.git"
   },
   "dependencies": {
     "react": "^16.1.1",
