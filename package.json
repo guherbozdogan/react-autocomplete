@@ -35,6 +35,7 @@
     "gulp-util": "3.0.8",
     "nopt": "4.0.1",
     "opn": "5.1.0",
+    "prop-types": "15.6.0",
     "react-dom": "16.1.1",
     "require-dir": "0.3.2",
     "run-sequence": "2.2.0",

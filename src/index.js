@@ -1,5 +1,7 @@
 import classnames from 'classnames';
-import React, {cloneElement, Component, PropTypes} from 'react';
+import React, {cloneElement, Component} from 'react';
+import PropTypes from 'prop-types';
+
 
 // Index that indicates that none of the autocomplete results is
 // currently highlighted.
